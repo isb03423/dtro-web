@@ -1,0 +1,21 @@
+@use "@styles/variables/vuetify" as vuetify;
+
+$radius: vuetify.$border-radius-root;
+$card-radius: $radius * 2;
+$brand-deep: #024199;
+$brand-sky: #dff5ff;
+$focus-accent: #ffdc54;
+$auth-header-height: 70px;
+$header-height: $auth-header-height;
+$header-height-mobile: $auth-header-height;
+
+@mixin surface-card {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: $card-radius;
+  background: rgb(var(--v-theme-surface));
+}
+
+@mixin focus-ring {
+  outline: 3px solid rgba(var(--v-theme-primary), 0.24);
+  outline-offset: 2px;
+}
