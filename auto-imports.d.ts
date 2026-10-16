@@ -7,6 +7,9 @@
 export {}
 declare global {
   const EffectScope: typeof import('vue')['EffectScope']
+  const OPERATION_DIRECTIONS: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['OPERATION_DIRECTIONS']
+  const TRAIN_LINES: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['TRAIN_LINES']
+  const TRAIN_STATUSES: typeof import('./src/features/train/constants/trainOptions.js')['TRAIN_STATUSES']
   const acceptHMRUpdate: typeof import('pinia')['acceptHMRUpdate']
   const asyncComputed: typeof import('@vueuse/core')['asyncComputed']
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
@@ -38,9 +41,24 @@ declare global {
   const eagerComputed: typeof import('@vueuse/core')['eagerComputed']
   const effectScope: typeof import('vue')['effectScope']
   const extendRef: typeof import('@vueuse/core')['extendRef']
+  const fn_createTrain: typeof import('./src/features/train/api/trainApi.js')['fn_createTrain']
+  const fn_deleteOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_deleteOperations']
+  const fn_deleteTrain: typeof import('./src/features/train/api/trainApi.js')['fn_deleteTrain']
+  const fn_getTrain: typeof import('./src/features/train/api/trainApi.js')['fn_getTrain']
+  const fn_listLines: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listLines']
+  const fn_listOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listOperations']
+  const fn_listStations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listStations']
+  const fn_listTrains: typeof import('./src/features/train/api/trainApi.js')['fn_listTrains']
+  const fn_saveOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_saveOperations']
+  const fn_statusLabel: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['fn_statusLabel']
+  const fn_updateTrain: typeof import('./src/features/train/api/trainApi.js')['fn_updateTrain']
   const getActivePinia: typeof import('pinia')['getActivePinia']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const gfn_formatDate: typeof import('./src/utils/date.js')['gfn_formatDate']
+  const gfn_getEditorTextLength: typeof import('./src/utils/editorText.js')['gfn_getEditorTextLength']
+  const gfn_getLabel: typeof import('./src/utils/common.js')['gfn_getLabel']
+  const gfn_validateRequiredFields: typeof import('./src/utils/validation.js')['gfn_validateRequiredFields']
   const h: typeof import('vue')['h']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
   const inject: typeof import('vue')['inject']
@@ -81,6 +99,7 @@ declare global {
   const onUnmounted: typeof import('vue')['onUnmounted']
   const onUpdated: typeof import('vue')['onUpdated']
   const onWatcherCleanup: typeof import('vue')['onWatcherCleanup']
+  const paginationMeta: typeof import('./src/utils/paginationMeta.js')['paginationMeta']
   const pausableWatch: typeof import('@vueuse/core')['pausableWatch']
   const provide: typeof import('vue')['provide']
   const provideLocal: typeof import('@vueuse/core')['provideLocal']
@@ -143,6 +162,7 @@ declare global {
   const useAsyncQueue: typeof import('@vueuse/core')['useAsyncQueue']
   const useAsyncState: typeof import('@vueuse/core')['useAsyncState']
   const useAttrs: typeof import('vue')['useAttrs']
+  const useAuthStore: typeof import('./src/stores/auth.js')['useAuthStore']
   const useAverage: typeof import('@vueuse/math')['useAverage']
   const useBase64: typeof import('@vueuse/core')['useBase64']
   const useBattery: typeof import('@vueuse/core')['useBattery']
@@ -331,6 +351,8 @@ declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly OPERATION_DIRECTIONS: UnwrapRef<typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['OPERATION_DIRECTIONS']>
+    readonly TRAIN_STATUSES: UnwrapRef<typeof import('./src/features/train/constants/trainOptions.js')['TRAIN_STATUSES']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
@@ -362,9 +384,23 @@ declare module 'vue' {
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
+    readonly fn_createTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_createTrain']>
+    readonly fn_deleteOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_deleteOperations']>
+    readonly fn_deleteTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_deleteTrain']>
+    readonly fn_getTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_getTrain']>
+    readonly fn_listLines: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listLines']>
+    readonly fn_listOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listOperations']>
+    readonly fn_listStations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listStations']>
+    readonly fn_listTrains: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_listTrains']>
+    readonly fn_saveOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_saveOperations']>
+    readonly fn_updateTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_updateTrain']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
+    readonly gfn_formatDate: UnwrapRef<typeof import('./src/utils/date.js')['gfn_formatDate']>
+    readonly gfn_getEditorTextLength: UnwrapRef<typeof import('./src/utils/editorText.js')['gfn_getEditorTextLength']>
+    readonly gfn_getLabel: UnwrapRef<typeof import('./src/utils/common.js')['gfn_getLabel']>
+    readonly gfn_validateRequiredFields: UnwrapRef<typeof import('./src/utils/validation.js')['gfn_validateRequiredFields']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
@@ -405,6 +441,7 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
+    readonly paginationMeta: UnwrapRef<typeof import('./src/utils/paginationMeta.js')['paginationMeta']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
@@ -467,6 +504,7 @@ declare module 'vue' {
     readonly useAsyncQueue: UnwrapRef<typeof import('@vueuse/core')['useAsyncQueue']>
     readonly useAsyncState: UnwrapRef<typeof import('@vueuse/core')['useAsyncState']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
+    readonly useAuthStore: UnwrapRef<typeof import('./src/stores/auth.js')['useAuthStore']>
     readonly useAverage: UnwrapRef<typeof import('@vueuse/math')['useAverage']>
     readonly useBase64: UnwrapRef<typeof import('@vueuse/core')['useBase64']>
     readonly useBattery: UnwrapRef<typeof import('@vueuse/core')['useBattery']>
