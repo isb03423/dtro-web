@@ -1,3 +1,4 @@
+
 module.exports = {
   env: {
     browser: true,
@@ -24,48 +25,56 @@ module.exports = {
     'regex',
     'regexp',
   ],
+
+  // ESLint 검사에서 제외할 파일 및 폴더
   ignorePatterns: ['src/plugins/iconify/*.js', 'node_modules', 'dist', '*.d.ts', 'vendor', '*.json'],
+
   rules: {
+    // 개발 환경에서는 콘솔 출력 및 디버거 사용 허용
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
 
-    // indentation (Already present in TypeScript)
+    // 쉼표 및 객체 속성의 공백 규칙
     'comma-spacing': ['error', { before: false, after: true }],
     'key-spacing': ['error', { afterColon: true }],
+
+    // Node.js 전역 process 사용 방식 검사 비활성화
     'n/prefer-global/process': ['off'],
+
+    // 함수의 인지적 복잡도 검사 비활성화
     'sonarjs/cognitive-complexity': ['off'],
 
+    // Vue 속성이 한 줄 또는 여러 줄일 때 줄바꿈 방식 지정
     'vue/first-attribute-linebreak': ['error', {
       singleline: 'beside',
       multiline: 'below',
     }],
 
-
-    // indentation (Already present in TypeScript)
+    // 들여쓰기는 공백 2칸 사용
     'indent': ['error', 2],
 
-    // Enforce trailing comma (Already present in TypeScript)
-    'comma-dangle': ['error', 'always-multiline'],
+    // 여러 줄로 작성된 배열 및 객체 등의 마지막 요소 쉼표 강제 경고 비활성화
+    'comma-dangle': 'off',
 
-    // Enforce consistent spacing inside braces of object (Already present in TypeScript)
+    // 객체 중괄호 내부에 공백 사용
     'object-curly-spacing': ['error', 'always'],
 
-    // Enforce camelCase naming convention
-    'camelcase': ['error', { allow: ['^fn_[A-Za-z][A-Za-z0-9]*$'] }],
+    // camelCase 명명 규칙 경고 비활성화 (gfn_getLabel 등 접두사_함수명 허용)
+    'camelcase': 'off',
 
-    // Disable max-len
+    // 코드 한 줄의 최대 길이 제한 비활성화
     'max-len': 'off',
 
-    // we don't want it
+    // 세미콜론 사용 금지
     'semi': ['error', 'never'],
 
-    // add parens ony when required in arrow function
+    // 화살표 함수의 매개변수 괄호는 필요한 경우에만 사용
     'arrow-parens': ['error', 'as-needed'],
 
-    // add new line above comment
+    // return 문 앞에 빈 줄 추가
     'newline-before-return': 'error',
 
-    // add new line above comment
+    // 주석 앞뒤의 빈 줄 규칙
     'lines-around-comment': [
       'error',
       {
@@ -76,18 +85,31 @@ module.exports = {
         allowObjectStart: true,
         allowArrayStart: true,
 
-        // We don't want to add extra space above closing SECTION
+        // SECTION 종료 주석 앞에는 불필요한 빈 줄을 추가하지 않음
         ignorePattern: '!SECTION',
       },
     ],
 
-    // Ignore _ as unused variable
+    // 사용하지 않는 변수의 _ 처리 관련 주석 (별도 규칙 미설정)
 
+    // 배열 요소의 줄바꿈 방식 통일
     'array-element-newline': ['error', 'consistent'],
     'array-bracket-newline': ['error', 'consistent'],
 
+    // Vue 컴포넌트 이름에 여러 단어를 사용하도록 강제하는 규칙 비활성화
     'vue/multi-word-component-names': 'off',
 
+    // <input/>, <div></div> 등 self-closing 관련 경고 비활성화
+    'vue/html-self-closing': 'off',
+
+    // 한 줄에 속성이 여러 개일 때 줄바꿈 강제 경고 비활성화
+    'vue/max-attributes-per-line': 'off',
+
+    // 요소 내용 앞뒤 줄바꿈 강제 경고 비활성화 (<button>텍스트</button> 등)
+    'vue/singleline-html-element-content-newline': 'off',
+    'vue/multiline-html-element-content-newline': 'off',
+
+    // 특정 구문 사이에 빈 줄 추가
     'padding-line-between-statements': [
       'error',
       { blankLine: 'always', prev: 'expression', next: 'const' },
@@ -96,7 +118,7 @@ module.exports = {
       { blankLine: 'always', prev: '*', next: 'multiline-const' },
     ],
 
-    // Plugin: eslint-plugin-import
+    // import 플러그인 관련 규칙
     'import/prefer-default-export': 'off',
     'import/newline-after-import': ['error', { count: 1 }],
     'no-restricted-imports': ['error', 'vuetify/components', {
@@ -104,7 +126,7 @@ module.exports = {
       message: 'apexcharts are auto imported',
     }],
 
-    // For omitting extension for ts files
+    // JS 및 TS 파일을 import할 때 확장자 생략 허용
     'import/extensions': [
       'error',
       'ignorePackages',
@@ -116,7 +138,7 @@ module.exports = {
       },
     ],
 
-    // ignore virtual files
+    // 가상 모듈 및 특수 import 경로는 경로 검사에서 제외
     'import/no-unresolved': [2, {
       ignore: [
         '~pages$',
@@ -124,26 +146,25 @@ module.exports = {
         '#auth$',
         '#components$',
 
-        // Ignore vite's ?raw imports
-        '.*\?raw',
+        // Vite의 ?raw import 경로 검사 제외
+        '.*\\?raw',
       ],
     }],
 
-    // Thanks: https://stackoverflow.com/a/63961972/10796681
+    // 참고: https://stackoverflow.com/a/63961972/10796681
     'no-shadow': 'off',
 
-
-    // Plugin: eslint-plugin-promise
+    // Promise 플러그인 관련 규칙
     'promise/always-return': 'off',
     'promise/catch-or-return': 'off',
 
-    // ESLint plugin vue
+    // Vue 플러그인 관련 규칙
     'vue/block-tag-newline': 'error',
     'vue/component-api-style': 'error',
     'vue/component-name-in-template-casing': ['error', 'PascalCase', { registeredComponentsOnly: false, ignores: ['/^swiper-/'] }],
     'vue/custom-event-name-casing': ['error', 'camelCase', {
       ignores: [
-        '/^(click):[a-z]+((\d)|([A-Z0-9][a-z0-9]+))*([A-Z])?/',
+        '/^(click):[a-z]+((\\d)|([A-Z0-9][a-z0-9]+))*([A-Z])?/',
       ],
     }],
     'vue/define-macros-order': 'error',
@@ -170,15 +191,15 @@ module.exports = {
       allowModifiers: true,
     }],
 
-    // -- Extension Rules
+    // Vue 확장 규칙
     'vue/no-irregular-whitespace': 'error',
     'vue/template-curly-spacing': 'error',
 
-    // -- Sonarlint
+    // SonarLint 관련 규칙
     'sonarjs/no-duplicate-string': 'off',
     'sonarjs/no-nested-template-literals': 'off',
 
-    // -- Unicorn
+    // Unicorn 플러그인 관련 규칙 (현재 비활성화)
     // 'unicorn/filename-case': 'off',
     // 'unicorn/prevent-abbreviations': ['error', {
     //   replacements: {
@@ -186,9 +207,9 @@ module.exports = {
     //   },
     // }],
 
-    // Internal Rules
+    // 프로젝트 내부 사용자 정의 규칙
 
-    // https://github.com/gmullerb/eslint-plugin-regex
+    // 참고: https://github.com/gmullerb/eslint-plugin-regex
     'regex/invalid': [
       'error',
       [
@@ -225,10 +246,12 @@ module.exports = {
         },
       ],
 
-      // Ignore files
-      '\.eslintrc\.cjs',
+      // ESLint 설정 파일은 정규식 검사에서 제외
+      '\\.eslintrc\\.cjs',
     ],
   },
+
+  // import 경로 확인을 위한 모듈 해석 설정
   settings: {
     'import/resolver': {
       node: true,

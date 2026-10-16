@@ -7,20 +7,25 @@ import { APP_ROLES } from '@/config/sideMenu'
 export const useAuthStore = defineStore('auth', () => {
   const account = ref(null)
   const hasRestored = ref(false)
+
   // 사용자 정보에서 현재 권한을 구한다.
   const role = computed(() => account.value?.role ?? APP_ROLES.GUEST)
+  
   // 사용자 정보에서 로그인 아이디를 구한다.
   const username = computed(() => account.value?.userid ?? '')
+  
   // 사용자 정보에서 화면에 표시할 이름을 구한다.
   const displayName = computed(() => account.value?.name ?? '')
+  
   // 현재 계정의 로그인 여부를 판단한다.
   const isAuthenticated = computed(() => role.value !== APP_ROLES.GUEST)
 
   // 서버 세션을 확인해 현재 사용자를 복원한다.
   const fn_restore = async () => {
     // 이미 세션을 확인했다면 같은 요청을 반복하지 않는다.
-    if (hasRestored.value)
+    if (hasRestored.value) {
       return
+    }
 
     try {
       account.value = await fn_fetchCurrentUser()
