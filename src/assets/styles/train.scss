@@ -20,6 +20,7 @@
 
 .train-field-grid--form input,
 .train-field-grid--form select {
+  box-sizing: border-box;
   inline-size: 100%;
   min-inline-size: 0;
   block-size: 44px;
@@ -98,10 +99,11 @@
 .train-card__state { display: flex; min-block-size: 180px; align-items: center; justify-content: center; color: #6c7787; }
 .train-field-grid { display: grid; margin: 0; gap: 20px 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .train-field-grid > div { min-inline-size: 0; }
-.train-field-grid dt { margin-bottom: 10px; font-size: 15px; font-weight: 700; }
-.train-field-grid dd { display: flex; min-inline-size: 0; min-block-size: 44px; align-items: center; margin: 0; padding: 8px 12px; border: 1px solid #d7deea; border-radius: 4px; background: #f0f2f6; color: #75808f; font-size: 15px; overflow-wrap: anywhere; }
+.train-field-grid dt { margin-bottom: 8px; font-size: 15px; font-weight: 700; }
+.train-field-grid dd { box-sizing: border-box; display: flex; min-inline-size: 0; min-block-size: 44px; align-items: center; margin: 0; padding: 8px 12px; border: 1px solid #d7deea; border-radius: 4px; background: #f0f2f6; color: #75808f; font-size: 15px; overflow-wrap: anywhere; }
 .train-field-grid--form { row-gap: 20px; }
 .train-field-grid--form label { align-self: start; }
+.train-field-grid--form .train-field-grid__full { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
 .train-actions { display: flex; justify-content: flex-end; margin-top: 20px; gap: 12px; }
 .train-actions .train-button:last-child { min-inline-size: 130px; }
 .train-inline-error { margin-top: 16px; color: #bc2938; font-size: 15px; }
@@ -114,6 +116,7 @@
   .train-page { padding: 32px 24px 48px; }
   .train-page__intro h2 { font-size: 21px; }
   .train-field-grid { grid-template-columns: 1fr; }
+  .train-field-grid--form .train-field-grid__full { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -136,7 +139,7 @@
   .train-card h2 { font-size: 18px; }
   .train-field-grid { gap: 20px; }
   .train-field-grid dt { font-size: 15px; }
-  .train-field-grid dd { font-size: 15px; }
+  .train-field-grid dd { min-block-size: 48px; font-size: 15px; }
   .train-actions { flex-wrap: wrap; }
   .train-actions .train-button { min-inline-size: 0; flex: 1; }
 }
