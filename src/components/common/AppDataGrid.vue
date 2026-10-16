@@ -17,9 +17,12 @@ defineProps({
   loading: { type: Boolean, default: false },
   loadingText: { type: String, default: '목록을 불러오는 중입니다.' },
   emptyText: { type: String, default: '검색 결과가 없습니다.' },
+  showSelect: { type: Boolean, default: false },
+  modelValue: { type: Array, default: () => [] },
+  itemValue: { type: String, default: 'id' },
 })
 
-const emit = defineEmits(['update:options', 'click:row'])
+const emit = defineEmits(['update:options', 'click:row', 'update:modelValue'])
 </script>
 
 <template>
@@ -36,6 +39,9 @@ const emit = defineEmits(['update:options', 'click:row'])
     :loading="loading"
     :loading-text="loadingText"
     :no-data-text="emptyText"
+    :show-select="showSelect"
+    :model-value="modelValue"
+    :item-value="itemValue"
     items-per-page-text="페이지당 항목"
     first-page-label="첫 페이지"
     prev-page-label="이전 페이지"
@@ -44,6 +50,7 @@ const emit = defineEmits(['update:options', 'click:row'])
     show-current-page
     @update:options="options => emit('update:options', options)"
     @click:row="(event, row) => emit('click:row', event, row)"
+    @update:model-value="value => emit('update:modelValue', value)"
   >
     <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
       <slot :name="slotName" v-bind="slotProps ?? {}" />
@@ -57,5 +64,8 @@ const emit = defineEmits(['update:options', 'click:row'])
 .app-data-grid .v-data-table__td { block-size: 50px; padding: 8px 16px !important; border-bottom: 1px solid #e6eaf0 !important; }
 .app-data-grid .v-data-table__th { background: #f2f4f8; color: #263241 !important; font-size: 13px; font-weight: 800; }
 .app-data-grid .v-data-table__td { color: #727e8e; font-size: 15px; }
+.app-data-grid .v-data-table__th,
+.app-data-grid .v-data-table__td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-data-grid .v-data-table-header__content { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-data-grid .v-data-table-footer { border-top: 1px solid #e6eaf0; }
 </style>

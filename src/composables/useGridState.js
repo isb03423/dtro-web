@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { DEFAULT_GRID_PAGE_SIZE } from '@/config/gridOptions'
 
 // 목록 화면에서 공통으로 쓰는 페이지·크기·정렬 상태를 만든다.
-export const fn_useGridState = ({ defaultSize = DEFAULT_GRID_PAGE_SIZE, defaultSort = 'id,asc' } = {}) => {
+export const gfn_useGridState = ({ defaultSize = DEFAULT_GRID_PAGE_SIZE, defaultSort = 'id,asc' } = {}) => {
   const page = ref(0)
   const size = ref(defaultSize)
   const sort = ref(defaultSort)

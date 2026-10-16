@@ -39,6 +39,7 @@ export default defineConfig({
     // Docs: https://github.com/antfu/unplugin-auto-import#unplugin-auto-import
     AutoImport({
       imports: ['vue', 'vue-router', '@vueuse/core', '@vueuse/math', 'pinia'],
+      dirs: ['@/components/common//**', 'src/features/**', 'src/utils', 'src/stores/**'],
       vueTemplate: true,
 
       // ℹ️ Disabled to avoid confusion & accidental usage
