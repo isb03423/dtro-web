@@ -1,8 +1,5 @@
 <script setup>
-import { fn_deleteTrain, fn_getTrain } from '@/features/train/api/trainApi'
-import { fn_statusLabel } from '@/features/train/constants/trainOptions'
-import { ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { gfn_getLabel } from '@/utils/common'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +13,7 @@ const listTo = '/trains'
 const fn_load = async () => {
   loading.value = true
   error.value = ''
+
   try {
     train.value = await fn_getTrain(route.params.trainId)
   } catch (requestError) {
@@ -30,19 +28,18 @@ watch(() => route.params.trainId, fn_load, { immediate: true })
 
 // 삭제 확인 후 열차를 지우고 목록으로 이동한다.
 const fn_remove = async () => {
-  if (!window.confirm('이 열차 정보를 삭제하시겠습니까?'))
+  if (!window.confirm('이 열차 정보를 삭제하시겠습니까?')) {
     return
+  }
 
   deleting.value = true
   error.value = ''
   try {
     await fn_deleteTrain(route.params.trainId)
     await router.push(listTo)
-  }
-  catch (requestError) {
+  } catch (requestError) {
     error.value = requestError.message
-  }
-  finally {
+  } finally {
     deleting.value = false
   }
 }
@@ -55,28 +52,70 @@ const fn_remove = async () => {
       <p>열차 정보의 기본 정보와 처리 내역을 확인하세요.</p>
     </header>
 
-    <VCard v-if="loading" class="train-card train-card__state" elevation="0">열차 정보를 불러오는 중입니다.</VCard>
+    <VCard v-if="loading" class="train-card train-card__state" elevation="0"> 열차 정보를 불러오는 중입니다. </VCard>
     <VCard v-else-if="error && !train" class="train-card train-card__state" elevation="0" role="alert">
-      {{ error }} <button type="button" @click="fn_load">다시 시도</button>
+      {{ error }}
+      <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
     <VCard v-else-if="train" class="train-card" elevation="0" tag="section" aria-labelledby="train-detail-heading">
       <dl class="train-field-grid">
-        <div><dt>열차 번호</dt><dd>{{ train.trainNumber }}</dd></div>
-        <div><dt>편성명</dt><dd>{{ train.formationName }}</dd></div>
-        <div><dt>노선</dt><dd>{{ train.lineName }}</dd></div>
-        <div><dt>차량 유형</dt><dd>{{ train.carType }}</dd></div>
-        <div><dt>차량 수</dt><dd>{{ train.carCount }}량</dd></div>
-        <div><dt>운영 상태</dt><dd>{{ fn_statusLabel(train.status) }}</dd></div>
-        <div><dt>도입일</dt><dd>{{ train.introducedOn }}</dd></div>
-        <div><dt>최근 점검일</dt><dd>{{ train.lastInspectedOn }}</dd></div>
+        <div>
+          <dt>열차 번호</dt>
+          <dd>{{ train.trainNumber }}</dd>
+        </div>
+        <div></div>
+        <div>
+          <dt>편성명</dt>
+          <dd>{{ train.formationName }}</dd>
+        </div>
+        <div>
+          <dt>운영 상태</dt>
+          <dd>{{ gfn_getLabel(TRAIN_STATUSES, train.status) }}</dd>
+        </div>
+        <div>
+          <dt>차량 유형</dt>
+          <dd>{{ train.carType }}</dd>
+        </div>
+        <div>
+          <dt>차량 수</dt>
+          <dd>{{ train.carCount }}량</dd>
+        </div>
+        <div>
+          <dt>도입일</dt>
+          <dd>{{ train.introducedOn }}</dd>
+        </div>
+        <div>
+          <dt>최근 점검일</dt>
+          <dd>{{ train.lastInspectedOn }}</dd>
+        </div>
+        <div>
+          <dt>등록일</dt>
+          <dd>{{ gfn_formatDate(train.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
+        </div>
+        <div>
+          <dt>등록자</dt>
+          <dd>{{ train.createdByName }}</dd>
+        </div>
+        <div v-if="train.updatedAt">
+          <dt>수정일</dt>
+          <dd>{{ gfn_formatDate(train.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
+        </div>
+        <div v-if="train.updatedByName">
+          <dt>수정자</dt>
+          <dd>{{ train.updatedByName }}</dd>
+        </div>
       </dl>
     </VCard>
 
-    <p v-if="error && train" class="train-inline-error" role="alert">{{ error }}</p>
+    <p v-if="error && train" class="train-inline-error" role="alert">
+      {{ error }}
+    </p>
     <div class="train-actions">
-      <RouterLink class="train-button" :to="listTo">목록</RouterLink>
+      <RouterLink class="train-button" :to="listTo"> 목록 </RouterLink>
       <button v-if="train" class="train-button" type="button" :disabled="deleting" @click="fn_remove">삭제</button>
-      <RouterLink v-if="train" class="train-button train-button--primary" :to="`/trains/${train.id}/edit`">수정</RouterLink>
+      <RouterLink v-if="train" class="train-button train-button--primary" :to="`/trains/${train.id}/edit`">
+        수정
+      </RouterLink>
     </div>
   </div>
 </template>
