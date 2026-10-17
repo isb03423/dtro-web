@@ -8,10 +8,13 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppDataGrid: typeof import('./src/components/common/AppDataGrid.vue')['default']
+    AppGridSelectDialog: typeof import('./src/components/common/AppGridSelectDialog.vue')['default']
+    AppMessageDialog: typeof import('./src/components/common/AppMessageDialog.vue')['default']
     AppSearchCondition: typeof import('./src/components/common/AppSearchCondition.vue')['default']
     CardStatisticsHorizontal: typeof import('./src/@core/components/cards/CardStatisticsHorizontal.vue')['default']
     CardStatisticsVertical: typeof import('./src/@core/components/cards/CardStatisticsVertical.vue')['default']
     CardStatisticsWithImages: typeof import('./src/@core/components/cards/CardStatisticsWithImages.vue')['default']
+    DATextEditor: typeof import('./src/components/common/DATextEditor.vue')['default']
     DtroAppShell: typeof import('./src/components/dtro/DtroAppShell.vue')['default']
     DtroAuthShell: typeof import('./src/components/dtro/DtroAuthShell.vue')['default']
     DtroHeader: typeof import('./src/components/dtro/DtroHeader.vue')['default']
@@ -22,5 +25,6 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ThemeSwitcher: typeof import('./src/@core/components/ThemeSwitcher.vue')['default']
+    TinyMCEEditor: typeof import('./src/@core/components/TinyMCEEditor.vue')['default']
   }
 }
