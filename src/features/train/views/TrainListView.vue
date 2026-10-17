@@ -98,7 +98,9 @@ const fn_reset = () => {
 
 // 그리드의 페이지·정렬 변경을 저장하고 목록을 갱신한다.
 const fn_updateGridOptions = options => {
-  if (setGridOptions(options)) fn_load()
+  if (setGridOptions(options)) {
+    fn_load()
+  }
 }
 
 // 열차 ID로 상세 화면 주소를 만든다.
