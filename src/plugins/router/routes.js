@@ -36,6 +36,14 @@ export const routes = [
     ],
   },
   {
+    path: '/trainoperations',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/trainoperation/views/TrainoperationListView.vue') },
+    ],
+  },
+  {
     path: '/login',
     component: () => import('@/layouts/dtro-auth.vue'),
     children: [{ path: '', component: () => import('@/pages/login.vue') }],

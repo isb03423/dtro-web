@@ -21,7 +21,7 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
     roles: [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN],
     items: [
       { label: '열차 정보', to: '/trains' },
-      { label: '열차 운행 정보', href: '#train-operation' },
+      { label: '열차 운행 정보', to: '/trainoperations' },
       { label: '운행 장애', href: '#operation-disruption' },
     ],
   },
