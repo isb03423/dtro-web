@@ -8,7 +8,7 @@ import vuetify from 'vite-plugin-vuetify'
 import svgLoader from 'vite-svg-loader'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   server: {
     proxy: {
       '/api': 'http://127.0.0.1:8081',
@@ -26,7 +26,9 @@ export default defineConfig({
     }),
     Components({
       dirs: ['src/@core/components', 'src/components'],
-      dts: true,
+
+      // 빌드와 개발 서버가 생성 파일을 동시에 쓰지 않도록 한다.
+      dts: command === 'serve',
       resolvers: [
         componentName => {
           // Auto import `VueApexCharts`
@@ -38,6 +40,7 @@ export default defineConfig({
 
     // Docs: https://github.com/antfu/unplugin-auto-import#unplugin-auto-import
     AutoImport({
+      dts: command === 'serve',
       imports: ['vue', 'vue-router', '@vueuse/core', '@vueuse/math', 'pinia'],
       dirs: ['@/components/common//**', 'src/features/**', 'src/utils', 'src/stores/**'],
       vueTemplate: true,
@@ -45,7 +48,7 @@ export default defineConfig({
       // ℹ️ Disabled to avoid confusion & accidental usage
       ignore: ['useCookies', 'useStorage'],
       eslintrc: {
-        enabled: true,
+        enabled: command === 'serve',
         filepath: './.eslintrc-auto-import.json',
       },
     }),
@@ -71,4 +74,4 @@ export default defineConfig({
       './src/**/*.vue',
     ],
   },
-})
+}))

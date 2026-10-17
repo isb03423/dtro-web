@@ -1,7 +1,8 @@
 <script setup>
 import { DEFAULT_GRID_PAGE_SIZE, GRID_PAGE_SIZES } from '@/config/gridOptions'
+import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
-defineProps({
+const props = defineProps({
   columns: { type: Array, required: true },
   rows: { type: Array, required: true },
   totalItems: { type: Number, required: true },
@@ -20,15 +21,195 @@ defineProps({
   showSelect: { type: Boolean, default: false },
   modelValue: { type: Array, default: () => [] },
   itemValue: { type: String, default: 'id' },
+  columnWidthKey: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:options', 'click:row', 'update:modelValue'])
+
+defineOptions({ inheritAttrs: false })
+
+const slots = useSlots()
+const grid = ref(null)
+const columnWidths = ref({})
+const headerMenu = ref(null)
+const fonts = ref({ header: '800 13px "Malgun Gothic", sans-serif', body: '15px "Malgun Gothic", sans-serif' })
+const textMeasure = document.createElement('canvas').getContext('2d')
+let resizing = null
+
+// 최대 표시 문자열과 헤더·정렬 아이콘·셀 여백을 포함한 기본 너비를 구한다.
+const fn_defaultColumnWidth = column => {
+  if (column.maxText === undefined && !column.autoWidth) {
+    return column.width
+  }
+  textMeasure.font = fonts.value.header
+
+  const headerWidth = textMeasure.measureText(column.title).width + 32 + (column.sortable === false ? 0 : 26) + 10
+
+  textMeasure.font = fonts.value.body
+
+  const samples = [column.maxText || '—'].flat()
+  if (column.autoWidth) {
+    samples.push(...props.rows.map(row => String(row[column.key] ?? '—')))
+  }
+  const textWidth = Math.max(0, ...samples.map(value => textMeasure.measureText(value).width))
+  const contentWidth = textWidth + 32 + (column.contentPadding || 0)
+
+  return Math.ceil(Math.max(column.width || 80, headerWidth, contentWidth))
+}
+
+const gridColumns = computed(() => props.columns.map(column => ({
+  ...column,
+  width: props.columnWidthKey && Number.isFinite(columnWidths.value[column.key])
+    ? Math.max(80, columnWidths.value[column.key]) : fn_defaultColumnWidth(column)
+})))
+
+const resizableColumns = computed(() => props.columnWidthKey ? gridColumns.value : [])
+const gridWidth = computed(() => `${gridColumns.value.reduce((sum, column) => sum + (Number(column.width) || 150), props.showSelect ? 48 : 0)}px`)
+const forwardedSlots = computed(() => Object.keys(slots).filter(name => !resizableColumns.value.some(column => name === `header.${column.key}`)))
+
+// 포인터 이동 거리만큼 열 너비를 변경한다.
+const fn_moveResize = event => {
+  if (!resizing) {
+    return
+  }
+  columnWidths.value = {
+    ...columnWidths.value,
+    [resizing.key]: Math.max(80, resizing.width + event.clientX - resizing.startX)
+  }
+}
+
+// 열 너비를 저장하고 크기 조절 이벤트를 해제한다.
+const fn_stopResize = () => {
+  if (resizing) {
+    localStorage.setItem(resizing.storageKey, JSON.stringify(columnWidths.value))
+  }
+  resizing = null
+  window.removeEventListener('pointermove', fn_moveResize)
+  window.removeEventListener('pointerup', fn_stopResize)
+  window.removeEventListener('pointercancel', fn_stopResize)
+}
+
+// 선택한 열의 너비 조절을 시작한다.
+const fn_startResize = (event, column) => {
+  if (event.button !== 0) {
+    return
+  }
+  event.preventDefault()
+  headerMenu.value = null
+  resizing = {
+    key: column.key,
+    width: Number(column.width) || 150,
+    startX: event.clientX,
+    storageKey: props.columnWidthKey
+  }
+  window.addEventListener('pointermove', fn_moveResize)
+  window.addEventListener('pointerup', fn_stopResize)
+  window.addEventListener('pointercancel', fn_stopResize)
+}
+
+// 방향키로 열 너비를 조절한다.
+const fn_resizeByKeyboard = (event, column) => {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  columnWidths.value = {
+    ...columnWidths.value,
+    [column.key]: Math.max(80, (Number(column.width) || 150) + (event.key === 'ArrowRight' ? 10 : -10))
+  }
+  localStorage.setItem(props.columnWidthKey, JSON.stringify(columnWidths.value))
+}
+
+// 저장된 열 너비를 기본값으로 초기화한다.
+const fn_resetColumnWidths = () => {
+  fn_stopResize()
+  columnWidths.value = {}
+  localStorage.removeItem(props.columnWidthKey)
+  headerMenu.value = null
+}
+
+// 그리드 헤더의 열 너비 메뉴를 연다.
+const fn_openHeaderMenu = event => {
+  if (!props.columnWidthKey || !event.target.closest('.v-data-table__th')) {
+    return
+  }
+  event.preventDefault()
+  headerMenu.value = {
+    left: Math.min(event.clientX, window.innerWidth - 150),
+    top: Math.min(event.clientY, window.innerHeight - 48)
+  }
+}
+
+// 열 너비 메뉴를 닫는다.
+const fn_closeHeaderMenu = () => {
+  headerMenu.value = null
+}
+
+// Escape 키를 누르면 열 너비 메뉴를 닫는다.
+const fn_closeHeaderMenuOnEscape = event => {
+  if (event.key === 'Escape') {
+    fn_closeHeaderMenu()
+  }
+}
+
+// 화면별로 저장된 열 너비를 불러온다.
+watch(() => props.columnWidthKey, key => {
+  fn_stopResize()
+  columnWidths.value = {}
+  headerMenu.value = null
+  if (!key) {
+    return
+  }
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || '{}')
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+      columnWidths.value = stored
+    }
+  } catch {
+    // 저장된 설정이 손상된 경우 기본 너비를 사용한다.
+  }
+}, { immediate: true })
+
+// 실제 표시 글꼴을 캔버스에서도 사용할 수 있는 font 형식으로 읽는다.
+const fn_updateFonts = () => {
+  if (!grid.value) {
+    return
+  }
+  const header = grid.value.$el.querySelector('.v-data-table__th')
+  const cell = !props.loading && props.rows.length ? grid.value.$el.querySelector('tbody .v-data-table__td') : null
+  const headerStyle = header ? getComputedStyle(header) : null
+  const cellStyle = cell ? getComputedStyle(cell) : null
+
+  fonts.value = {
+    header: headerStyle ? `${headerStyle.fontWeight} ${headerStyle.fontSize} ${headerStyle.fontFamily}` : fonts.value.header,
+    body: cellStyle ? `${cellStyle.fontWeight} ${cellStyle.fontSize} ${cellStyle.fontFamily}` : fonts.value.body
+  }
+}
+
+watch([() => props.loading, () => props.rows], fn_updateFonts, { flush: 'post' })
+
+onMounted(() => {
+  fn_updateFonts()
+  window.addEventListener('pointerdown', fn_closeHeaderMenu)
+  window.addEventListener('keydown', fn_closeHeaderMenuOnEscape)
+})
+
+onBeforeUnmount(() => {
+  fn_stopResize()
+  window.removeEventListener('pointerdown', fn_closeHeaderMenu)
+  window.removeEventListener('keydown', fn_closeHeaderMenuOnEscape)
+})
 </script>
 
 <template>
   <VDataTableServer
+    ref="grid"
+    v-bind="$attrs"
     class="app-data-grid"
-    :headers="columns"
+    :class="{ 'app-data-grid--resizable': columnWidthKey }"
+    :style="columnWidthKey ? { '--app-grid-width': gridWidth } : undefined"
+    :headers="gridColumns"
     :items="rows"
     :items-length="totalItems"
     :items-per-page="pageSize"
@@ -48,24 +229,43 @@ const emit = defineEmits(['update:options', 'click:row', 'update:modelValue'])
     next-page-label="다음 페이지"
     last-page-label="마지막 페이지"
     show-current-page
+    @contextmenu="fn_openHeaderMenu"
     @update:options="options => emit('update:options', options)"
     @click:row="(event, row) => emit('click:row', event, row)"
     @update:model-value="value => emit('update:modelValue', value)"
   >
-    <template v-for="(_, slotName) in $slots" #[slotName]="slotProps">
+    <template v-for="slotName in forwardedSlots" #[slotName]="slotProps">
       <slot :name="slotName" v-bind="slotProps ?? {}" />
     </template>
+    <template v-for="column in resizableColumns" #[`header.${column.key}`]="slotProps" :key="column.key">
+      <slot :name="`header.${column.key}`" v-bind="slotProps">
+        <div class="v-data-table-header__content">
+          <span class="app-data-grid__header-text">{{ column.title }}</span>
+          <VIcon v-if="column.sortable !== false" class="v-data-table-header__sort-icon" :icon="slotProps.getSortIcon(column)" />
+        </div>
+      </slot>
+      <span
+        class="app-data-grid__column-resize"
+        role="separator"
+        tabindex="0"
+        aria-orientation="vertical"
+        :aria-label="`${column.title} 열 너비 조절`"
+        :aria-valuenow="Number(column.width) || 150"
+        :aria-valuemin="80"
+        @pointerdown.stop="fn_startResize($event, column)"
+        @click.stop
+        @keydown="fn_resizeByKeyboard($event, column)"
+      />
+    </template>
   </VDataTableServer>
+  <Teleport to="body">
+    <div
+      v-if="headerMenu"
+      class="app-data-grid__header-menu"
+      :style="{ left: `${headerMenu.left}px`, top: `${headerMenu.top}px` }"
+      @pointerdown.stop
+    >
+      <button type="button" @click="fn_resetColumnWidths">열 너비 초기화</button>
+    </div>
+  </Teleport>
 </template>
-
-<style lang="scss">
-.app-data-grid .v-table__wrapper table { min-inline-size: 900px; table-layout: fixed; }
-.app-data-grid .v-data-table__th,
-.app-data-grid .v-data-table__td { block-size: 50px; padding: 8px 16px !important; border-bottom: 1px solid #e6eaf0 !important; }
-.app-data-grid .v-data-table__th { background: #f2f4f8; color: #263241 !important; font-size: 13px; font-weight: 800; }
-.app-data-grid .v-data-table__td { color: #727e8e; font-size: 15px; }
-.app-data-grid .v-data-table__th,
-.app-data-grid .v-data-table__td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-data-grid .v-data-table-header__content { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-data-grid .v-data-table-footer { border-top: 1px solid #e6eaf0; }
-</style>

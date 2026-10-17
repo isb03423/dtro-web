@@ -12,6 +12,7 @@ const props = defineProps({
   maxHeight: { type: String, default: null },
   maxlength: { type: Number, default: 65000 },
 })
+
 const emit = defineEmits(['update:modelValue'])
 const editorRef = shallowRef(null)
 const currentLength = computed(() => gfn_getEditorTextLength(props.modelValue))

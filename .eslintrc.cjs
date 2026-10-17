@@ -30,6 +30,10 @@ module.exports = {
   ignorePatterns: ['src/plugins/iconify/*.js', 'node_modules', 'dist', '*.d.ts', 'vendor', '*.json'],
 
   rules: {
+    // 실행문이 한 줄이어도 조건문·반복문에는 항상 중괄호를 사용한다.
+    'curly': ['error', 'all'],
+    'brace-style': ['error', '1tbs'],
+
     // 개발 환경에서는 콘솔 출력 및 디버거 사용 허용
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',

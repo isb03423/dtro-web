@@ -13,12 +13,28 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
 const icon = computed(() => ({ confirm: '?', error: '×', info: 'i', success: '✓', warning: '!' })[props.type] || 'i')
-const close = () => { emit('cancel'); emit('update:modelValue', false) }
-const confirm = () => { emit('confirm'); emit('update:modelValue', false) }
+
+const close = () => {
+  emit('cancel')
+  emit('update:modelValue', false)
+}
+
+const confirm = () => {
+  emit('confirm')
+  emit('update:modelValue', false)
+}
 </script>
 
 <template>
-  <VDialog :model-value="modelValue" max-width="350" @update:model-value="value => { if (!value) close() }">
+  <VDialog
+    :model-value="modelValue"
+    max-width="350"
+    @update:model-value="value => {
+      if (!value) {
+        close()
+      }
+    }"
+  >
     <VCard class="app-message-dialog" rounded="lg" elevation="0">
       <div class="app-message-dialog__icon" :class="`app-message-dialog__icon--${type}`" aria-hidden="true">{{ icon }}</div>
       <h2>{{ title }}</h2>

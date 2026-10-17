@@ -6,10 +6,25 @@ import { useRoute } from 'vue-router'
 
 const authStore = useAuthStore()
 const route = useRoute()
+
 // 현재 권한에 표시할 메뉴만 추린다.
 const visibleSections = computed(() => fn_getVisibleMenuSections(authStore.role))
+
 // 현재 경로가 열차 관리 화면인지 확인한다.
-const isTrainPage = computed(() => route.path.startsWith('/trains'))
+const isTrainPage = computed(() => Boolean(route.meta.trainLayout))
+
+// 겹치는 경로는 가장 구체적인 메뉴 하나만 선택한다.
+const selectedItem = computed(() => {
+  const items = visibleSections.value.flatMap(section => section.items)
+  const hashItem = items.find(item => item.href && item.href === route.hash)
+  if (hashItem) {
+    return hashItem
+  }
+
+  return items
+    .filter(item => item.to && (route.path === item.to || route.path.startsWith(`${item.to}/`)))
+    .sort((a, b) => b.to.length - a.to.length)[0]
+})
 
 // 메뉴 항목을 선택했을 때 이동할 경로를 만든다.
 const fn_boardDestination = item => ({
@@ -29,13 +44,13 @@ const fn_boardDestination = item => ({
 
       <ul>
         <li v-for="item in section.items" :key="item.label">
-          <RouterLink v-if="item.to" :to="item.to">
+          <RouterLink v-if="item.to" :to="item.to" :class="{ 'is-selected': selectedItem === item }" :aria-current="selectedItem === item ? 'page' : null">
             {{ item.label }}
           </RouterLink>
-          <RouterLink v-else-if="section.id === 'board'" :to="fn_boardDestination(item)">
+          <RouterLink v-else-if="section.id === 'board'" :to="fn_boardDestination(item)" :class="{ 'is-selected': selectedItem === item }" :aria-current="selectedItem === item ? 'location' : null">
             {{ item.label }}
           </RouterLink>
-          <a v-else :href="item.href">{{ item.label }}</a>
+          <a v-else :href="item.href" :class="{ 'is-selected': selectedItem === item }" :aria-current="selectedItem === item ? 'location' : null">{{ item.label }}</a>
         </li>
       </ul>
     </section>
@@ -64,7 +79,7 @@ const fn_boardDestination = item => ({
   padding-inline: var(--menu-inline-padding);
 }
 
-.role-side-menu--train .role-side-menu__section a.router-link-active {
+.role-side-menu__section a.is-selected {
   border-inline-start: 6px solid #064494;
   border-radius: 0;
   background: #f3f7fc;
@@ -105,7 +120,7 @@ const fn_boardDestination = item => ({
   transition: background-color .15s ease;
 }
 
-.role-side-menu__section a:not(.router-link-active):hover {
+.role-side-menu__section a:not(.is-selected):hover {
   background: #f1f2f4;
 }
 

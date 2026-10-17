@@ -11,6 +11,7 @@ declare module 'vue' {
     AppGridSelectDialog: typeof import('./src/components/common/AppGridSelectDialog.vue')['default']
     AppMessageDialog: typeof import('./src/components/common/AppMessageDialog.vue')['default']
     AppSearchCondition: typeof import('./src/components/common/AppSearchCondition.vue')['default']
+    AppStatusTimeline: typeof import('./src/components/common/AppStatusTimeline.vue')['default']
     CardStatisticsHorizontal: typeof import('./src/@core/components/cards/CardStatisticsHorizontal.vue')['default']
     CardStatisticsVertical: typeof import('./src/@core/components/cards/CardStatisticsVertical.vue')['default']
     CardStatisticsWithImages: typeof import('./src/@core/components/cards/CardStatisticsWithImages.vue')['default']
