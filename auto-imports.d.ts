@@ -7,6 +7,9 @@
 export {}
 declare global {
   const EffectScope: typeof import('vue')['EffectScope']
+  const INCIDENT_HISTORY_TITLES: typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_HISTORY_TITLES']
+  const INCIDENT_STATUSES: typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_STATUSES']
+  const INCIDENT_TYPES: typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_TYPES']
   const OPERATION_DIRECTIONS: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['OPERATION_DIRECTIONS']
   const TRAIN_LINES: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['TRAIN_LINES']
   const TRAIN_STATUSES: typeof import('./src/features/train/constants/trainOptions.js')['TRAIN_STATUSES']
@@ -42,13 +45,19 @@ declare global {
   const effectScope: typeof import('vue')['effectScope']
   const extendRef: typeof import('@vueuse/core')['extendRef']
   const fn_createTrain: typeof import('./src/features/train/api/trainApi.js')['fn_createTrain']
+  const fn_deleteIncidents: typeof import('./src/features/incident/api/incidentApi.js')['fn_deleteIncidents']
   const fn_deleteOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_deleteOperations']
   const fn_deleteTrain: typeof import('./src/features/train/api/trainApi.js')['fn_deleteTrain']
+  const fn_getIncident: typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncident']
+  const fn_getIncidentHistory: typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncidentHistory']
   const fn_getTrain: typeof import('./src/features/train/api/trainApi.js')['fn_getTrain']
+  const fn_listIncidents: typeof import('./src/features/incident/api/incidentApi.js')['fn_listIncidents']
   const fn_listLines: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listLines']
   const fn_listOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listOperations']
   const fn_listStations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listStations']
   const fn_listTrains: typeof import('./src/features/train/api/trainApi.js')['fn_listTrains']
+  const fn_processIncident: typeof import('./src/features/incident/api/incidentApi.js')['fn_processIncident']
+  const fn_saveIncident: typeof import('./src/features/incident/api/incidentApi.js')['fn_saveIncident']
   const fn_saveOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_saveOperations']
   const fn_statusLabel: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['fn_statusLabel']
   const fn_updateTrain: typeof import('./src/features/train/api/trainApi.js')['fn_updateTrain']
@@ -56,6 +65,8 @@ declare global {
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const gfn_formatDate: typeof import('./src/utils/date.js')['gfn_formatDate']
+  const gfn_formatDateTime: typeof import('./src/utils/date.js')['gfn_formatDateTime']
+  const gfn_formatDateTimeInput: typeof import('./src/utils/date.js')['gfn_formatDateTimeInput']
   const gfn_getEditorTextLength: typeof import('./src/utils/editorText.js')['gfn_getEditorTextLength']
   const gfn_getLabel: typeof import('./src/utils/common.js')['gfn_getLabel']
   const gfn_validateRequiredFields: typeof import('./src/utils/validation.js')['gfn_validateRequiredFields']
@@ -351,6 +362,9 @@ declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly INCIDENT_HISTORY_TITLES: UnwrapRef<typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_HISTORY_TITLES']>
+    readonly INCIDENT_STATUSES: UnwrapRef<typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_STATUSES']>
+    readonly INCIDENT_TYPES: UnwrapRef<typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_TYPES']>
     readonly OPERATION_DIRECTIONS: UnwrapRef<typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['OPERATION_DIRECTIONS']>
     readonly TRAIN_STATUSES: UnwrapRef<typeof import('./src/features/train/constants/trainOptions.js')['TRAIN_STATUSES']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
@@ -385,19 +399,27 @@ declare module 'vue' {
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly fn_createTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_createTrain']>
+    readonly fn_deleteIncidents: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_deleteIncidents']>
     readonly fn_deleteOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_deleteOperations']>
     readonly fn_deleteTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_deleteTrain']>
+    readonly fn_getIncident: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncident']>
+    readonly fn_getIncidentHistory: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncidentHistory']>
     readonly fn_getTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_getTrain']>
+    readonly fn_listIncidents: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_listIncidents']>
     readonly fn_listLines: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listLines']>
     readonly fn_listOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listOperations']>
     readonly fn_listStations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listStations']>
     readonly fn_listTrains: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_listTrains']>
+    readonly fn_processIncident: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_processIncident']>
+    readonly fn_saveIncident: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_saveIncident']>
     readonly fn_saveOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_saveOperations']>
     readonly fn_updateTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_updateTrain']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly gfn_formatDate: UnwrapRef<typeof import('./src/utils/date.js')['gfn_formatDate']>
+    readonly gfn_formatDateTime: UnwrapRef<typeof import('./src/utils/date.js')['gfn_formatDateTime']>
+    readonly gfn_formatDateTimeInput: UnwrapRef<typeof import('./src/utils/date.js')['gfn_formatDateTimeInput']>
     readonly gfn_getEditorTextLength: UnwrapRef<typeof import('./src/utils/editorText.js')['gfn_getEditorTextLength']>
     readonly gfn_getLabel: UnwrapRef<typeof import('./src/utils/common.js')['gfn_getLabel']>
     readonly gfn_validateRequiredFields: UnwrapRef<typeof import('./src/utils/validation.js')['gfn_validateRequiredFields']>

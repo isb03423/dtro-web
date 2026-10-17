@@ -17,6 +17,7 @@ const fn_updateValue = (field, value) => {
 
 // 부모 화면에 검색 요청을 전달한다.
 const fn_search = () => emit('search')
+
 // 부모 화면에 검색 조건 초기화를 요청한다.
 const fn_reset = () => emit('reset')
 </script>

@@ -9,6 +9,10 @@ export const gfn_useGridState = ({ defaultSize = DEFAULT_GRID_PAGE_SIZE, default
 
   // API 정렬 문자열을 그리드가 사용하는 배열로 바꾼다.
   const gridSort = computed(() => {
+    if (!sort.value) {
+      return []
+    }
+
     const [key, order] = sort.value.split(',')
 
     return [{ key, order }]
@@ -20,8 +24,9 @@ export const gfn_useGridState = ({ defaultSize = DEFAULT_GRID_PAGE_SIZE, default
     const nextPage = size.value === itemsPerPage ? gridPage - 1 : 0
     const selected = sortBy[0]
     const nextSort = selected ? `${selected.key},${selected.order}` : defaultSort
-    if (page.value === nextPage && size.value === itemsPerPage && sort.value === nextSort)
+    if (page.value === nextPage && size.value === itemsPerPage && sort.value === nextSort) {
       return false
+    }
 
     page.value = nextPage
     size.value = itemsPerPage
