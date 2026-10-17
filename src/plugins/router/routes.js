@@ -44,6 +44,16 @@ export const routes = [
     ],
   },
   {
+    path: '/incidents',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/incident/views/IncidentListView.vue'), props: { mode: 'reception' } },
+      { path: 'actions', component: () => import('@/features/incident/views/IncidentListView.vue'), props: { mode: 'action' } },
+      { path: 'actions/:incidentId', component: () => import('@/features/incident/views/IncidentActionView.vue') },
+    ],
+  },
+  {
     path: '/login',
     component: () => import('@/layouts/dtro-auth.vue'),
     children: [{ path: '', component: () => import('@/pages/login.vue') }],
