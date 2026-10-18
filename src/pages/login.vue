@@ -7,20 +7,18 @@ const form = ref({ username: '', password: '', remember: false })
 const loginError = ref('')
 const isSubmitting = ref(false)
 
-// 로그인 양식을 제출하고 성공하면 대시보드로 이동한다.
+// 로그인 양식을 제출하고 권한에 맞는 첫 화면으로 이동한다.
 const fn_submit = async () => {
   isSubmitting.value = true
   try {
     await authStore.login(form.value.username, form.value.password)
     loginError.value = ''
     await router.push('/dashboard')
-  }
-  catch (error) {
+  } catch (error) {
     loginError.value = error.status === 401
       ? '아이디 또는 비밀번호가 일치하지 않습니다.'
       : error.message
-  }
-  finally {
+  } finally {
     isSubmitting.value = false
   }
 }
@@ -32,6 +30,9 @@ const fn_submit = async () => {
       <h1 id="login-title">로그인</h1>
       <p>서비스 이용을 위해 정보를 입력해 주세요.</p>
     </div>
+
+    <p v-if="$route.query.registered === '1'" class="auth-card__success" role="status">회원가입이 완료되었습니다. 로그인해 주세요.</p>
+    <p v-if="$route.query.passwordChanged === '1'" class="auth-card__success" role="status">비밀번호가 변경되었습니다. 다시 로그인해 주세요.</p>
 
     <form @submit.prevent="fn_submit">
       <label for="login-id">아이디</label>

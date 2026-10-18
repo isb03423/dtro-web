@@ -1,0 +1,122 @@
+@use "@styles/variables/dtro" as dtro;
+
+.member-page {
+  padding: clamp(20px, 3vw, 32px);
+  inline-size: min(100%, 760px);
+  margin-inline: auto;
+}
+
+.member-card.v-card {
+  @include dtro.surface-card;
+
+  padding: clamp(20px, 2vw, 28px);
+}
+
+.member-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  border: 2px solid rgba(var(--v-theme-primary), 0.16);
+  border-radius: 50%;
+  background: rgba(var(--v-theme-primary), 0.08);
+  block-size: 48px;
+  color: rgb(var(--v-theme-primary));
+  font-size: 24px;
+  inline-size: 48px;
+  place-items: center;
+}
+
+.member-heading h1 {
+  color: rgb(var(--v-theme-on-surface));
+  font-size: clamp(20px, 2vw, 26px);
+}
+
+.member-heading p {
+  color: rgba(var(--v-theme-on-surface), 0.62);
+  font-size: 15px;
+  margin-block-start: 4px;
+}
+
+.member-details {
+  border-block-start: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  margin-block-start: 20px;
+}
+
+.member-details > div {
+  display: grid;
+  border-block-end: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  gap: 12px;
+  grid-template-columns: 110px minmax(0, 1fr);
+  padding-block: 12px;
+}
+
+.member-details dt { color: rgba(var(--v-theme-on-surface), 0.62); }
+
+.member-details dd {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-form {
+  display: grid;
+  gap: 16px;
+  margin-block-start: 22px;
+}
+
+.member-field {
+  display: grid;
+  gap: 6px;
+}
+
+.member-field label { font-weight: 700; }
+
+.member-field input {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.2);
+  border-radius: 7px;
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+  font: inherit;
+  inline-size: 100%;
+  min-block-size: 42px;
+  padding-inline: 12px;
+}
+
+.member-field input:focus-visible {
+  border-color: rgb(var(--v-theme-primary));
+  outline: 3px solid rgba(var(--v-theme-primary), 0.24);
+}
+
+.member-field input[aria-invalid="true"] { border-color: rgb(var(--v-theme-error)); }
+
+.member-field small,
+.member-error { color: rgb(var(--v-theme-error)); }
+
+.member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 24px;
+}
+
+.member-status { margin-block-start: 16px; }
+
+.member-error { margin-block-start: 16px; }
+
+@media (max-width: 640px) {
+  .member-page {
+    padding-block: 16px;
+    padding-inline: 14px;
+  }
+
+  .member-details > div {
+    gap: 4px;
+    grid-template-columns: 1fr;
+  }
+
+  .member-actions > * { flex: 1 1 auto; }
+}
