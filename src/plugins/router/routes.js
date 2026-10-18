@@ -18,10 +18,44 @@ export const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'profile/edit',
+        component: () => import('@/pages/profile-edit.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'profile/password',
+        component: () => import('@/pages/profile-password.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'forbidden',
         component: () => import('@/pages/forbidden.vue'),
         meta: { requiresAuth: true },
       },
+    ],
+  },
+  {
+    path: '/admin/dashboard',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+    children: [
+      { path: '', component: () => import('@/features/admin/views/AdminDashboardView.vue') },
+    ],
+  },
+  {
+    path: '/admin/members',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+    children: [
+      { path: '', component: () => import('@/features/member/views/AdminMemberListView.vue') },
+    ],
+  },
+  {
+    path: '/train-overview',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/trainmanagement/views/TrainOverviewView.vue') },
     ],
   },
   {
@@ -50,7 +84,6 @@ export const routes = [
     children: [
       { path: '', component: () => import('@/features/incident/views/IncidentListView.vue'), props: { mode: 'reception' } },
       { path: 'actions', component: () => import('@/features/incident/views/IncidentListView.vue'), props: { mode: 'action' } },
-      { path: 'actions/:incidentId', component: () => import('@/features/incident/views/IncidentActionView.vue') },
     ],
   },
   {
@@ -62,6 +95,11 @@ export const routes = [
     path: '/register',
     component: () => import('@/layouts/dtro-auth.vue'),
     children: [{ path: '', component: () => import('@/pages/register.vue') }],
+  },
+  {
+    path: '/session-error',
+    component: () => import('@/layouts/dtro-auth.vue'),
+    children: [{ path: '', component: () => import('@/pages/session-error.vue') }],
   },
   {
     path: '/:pathMatch(.*)*',

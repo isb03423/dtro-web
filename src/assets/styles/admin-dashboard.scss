@@ -1,0 +1,220 @@
+.admin-dashboard {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-dashboard__intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-block-end: 0;
+}
+
+.admin-dashboard__refresh {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.admin-dashboard__refresh span,
+.admin-dashboard__panel-heading p {
+  color: #75808f;
+  font-size: 13px;
+}
+
+.admin-dashboard__state,
+.admin-dashboard__empty {
+  color: #59697d;
+  padding-block: 28px;
+  text-align: center;
+}
+
+.admin-dashboard__state { padding-block: 60px; }
+.admin-dashboard__error { color: #bc2938; }
+
+.admin-dashboard__metrics {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-dashboard__metric,
+.admin-dashboard__panel {
+  border: 1px solid #d7deea;
+  border-radius: 7px;
+  background: #fff;
+  min-inline-size: 0;
+}
+
+.admin-dashboard__metric {
+  display: grid;
+  padding: 20px;
+  color: #263241;
+  gap: 9px;
+  min-block-size: 150px;
+  text-decoration: none;
+}
+
+.admin-dashboard__metric:hover {
+  border-color: #8db6df;
+  box-shadow: 0 5px 14px #193e6514;
+}
+
+.admin-dashboard__metric--attention {
+  border-color: #f0c7b1;
+  background: #fffaf7;
+}
+
+.admin-dashboard__metric-label {
+  color: #59697d;
+  font-weight: 700;
+}
+
+.admin-dashboard__metric strong {
+  color: #064984;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1;
+}
+
+.admin-dashboard__metric--attention strong { color: #b34c21; }
+
+.admin-dashboard__metric small {
+  font-size: 14px;
+  font-weight: 500;
+  padding-inline-start: 5px;
+}
+
+.admin-dashboard__member-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-dashboard__member-status > span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 7px;
+  padding-block: 5px;
+  padding-inline: 9px;
+}
+
+.admin-dashboard__member-status b { font-size: 15px; }
+
+.admin-dashboard__member-status > .admin-dashboard__member-status--enabled {
+  border-color: #c8e5d6;
+  background: #f1faf5;
+  color: #227b58;
+}
+
+.admin-dashboard__member-status > .admin-dashboard__member-status--disabled {
+  border-color: #f0d3c4;
+  background: #fff7f3;
+  color: #a4512e;
+}
+
+.admin-dashboard__metric-detail {
+  align-self: end;
+  color: #064984;
+  font-size: 13px;
+}
+
+.admin-dashboard__panels {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-dashboard__panel { padding: 24px; }
+
+.admin-dashboard__panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-block-end: 24px;
+}
+
+.admin-dashboard__panel-heading h3 { font-size: 18px; }
+.admin-dashboard__panel-heading p { margin-block-start: 5px; }
+
+.admin-dashboard__panel-heading a {
+  color: #064984;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-dashboard__train-list { display: grid; }
+
+.admin-dashboard__train-list a {
+  display: grid;
+  align-items: center;
+  border-block-end: 1px solid #e9edf2;
+  color: #263241;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding-block: 13px;
+  text-decoration: none;
+}
+
+.admin-dashboard__train-list a:last-child { border-block-end: 0; }
+.admin-dashboard__train-list a:hover { color: #064984; }
+
+.admin-dashboard__train-list strong {
+  color: #064984;
+  font-size: 21px;
+}
+
+.admin-dashboard__train-list small {
+  font-size: 13px;
+  font-weight: 500;
+  padding-inline-start: 4px;
+}
+
+.admin-dashboard__train-list .v-icon { color: #75808f; }
+
+.admin-dashboard__status {
+  display: inline-block;
+  border-radius: 99px;
+  background: #e6f5ee;
+  color: #227b58;
+  font-size: 12px;
+  font-weight: 700;
+  padding-block: 5px;
+  padding-inline: 9px;
+  white-space: nowrap;
+}
+
+.admin-dashboard__status--disabled {
+  background: #f0f2f6;
+  color: #667382;
+}
+
+@media (max-width: 1200px) {
+  .admin-dashboard__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .admin-dashboard__intro {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .admin-dashboard__panels { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 500px) {
+  .admin-dashboard__metrics { grid-template-columns: 1fr; }
+
+  .admin-dashboard__refresh {
+    flex-direction: column;
+    align-items: flex-start;
+    white-space: normal;
+  }
+  .admin-dashboard__panel { padding: 16px; }
+}
