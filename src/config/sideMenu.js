@@ -11,7 +11,7 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
     title: '시스템 관리',
     roles: [APP_ROLES.ADMIN],
     items: [
-      { label: '대시보드', to: '/dashboard' },
+      { label: '대시보드', to: '/admin/dashboard' },
       { label: '사용자 관리', to: '/admin/members' },
     ],
   },

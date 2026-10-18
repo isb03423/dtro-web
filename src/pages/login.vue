@@ -1,5 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
+import { APP_ROLES } from '@/config/sideMenu'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -13,7 +14,7 @@ const fn_submit = async () => {
   try {
     await authStore.login(form.value.username, form.value.password)
     loginError.value = ''
-    await router.push('/dashboard')
+    await router.push(authStore.role === APP_ROLES.ADMIN ? '/admin/dashboard' : '/dashboard')
   } catch (error) {
     loginError.value = error.status === 401
       ? '아이디 또는 비밀번호가 일치하지 않습니다.'

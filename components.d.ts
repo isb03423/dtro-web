@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppDataGrid: typeof import('./src/components/common/AppDataGrid.vue')['default']
+    AppDonutChart: typeof import('./src/components/common/AppDonutChart.vue')['default']
     AppGridSelectDialog: typeof import('./src/components/common/AppGridSelectDialog.vue')['default']
     AppMessageDialog: typeof import('./src/components/common/AppMessageDialog.vue')['default']
     AppSearchCondition: typeof import('./src/components/common/AppSearchCondition.vue')['default']
@@ -27,5 +28,6 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     ThemeSwitcher: typeof import('./src/@core/components/ThemeSwitcher.vue')['default']
     TinyMCEEditor: typeof import('./src/@core/components/TinyMCEEditor.vue')['default']
+    VueApexCharts: typeof import('vue3-apexcharts')['default']
   }
 }

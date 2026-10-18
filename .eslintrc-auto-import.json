@@ -353,6 +353,9 @@
     "whenever": true,
     "INCIDENT_HISTORY_TITLES": true,
     "gfn_formatDateTime": true,
-    "gfn_formatDateTimeInput": true
+    "gfn_formatDateTimeInput": true,
+    "MEMBER_ROLES": true,
+    "fn_getTrainOverview": true,
+    "fn_getAdminDashboard": true
   }
 }
