@@ -1,5 +1,76 @@
 @use "@styles/variables/dtro" as dtro;
 
+// 관리자 회원 관리
+.admin-member-search input {
+  border: 1px solid #d7deea;
+  border-radius: 4px;
+  background: #fff;
+  color: #263241;
+  font: inherit;
+  inline-size: 100%;
+  min-block-size: 40px;
+  min-inline-size: 0;
+  padding-block: 6px;
+  padding-inline: 10px;
+}
+
+.admin-member-cell {
+  border: 1px solid #d7deea;
+  border-radius: 4px;
+  background: #fff;
+  color: #263241;
+  font: inherit;
+  inline-size: 100%;
+  min-block-size: 40px;
+  min-inline-size: 0;
+  padding-block: 6px;
+  padding-inline: 10px;
+}
+
+.admin-member-page .v-data-table__td { white-space: nowrap; }
+
+.admin-member-note {
+  color: #75808f;
+  font-size: 13px;
+  margin-block-start: 14px;
+}
+
+.admin-member-reset-button { min-inline-size: 88px; }
+
+.admin-member-reset-result {
+  display: grid;
+  padding: 28px;
+  gap: 14px;
+}
+
+.admin-member-reset-result h2 { font-size: 19px; }
+
+.admin-member-reset-result p {
+  color: #59697d;
+  line-height: 1.5;
+}
+
+.admin-member-reset-result label {
+  display: grid;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.admin-member-reset-result input {
+  border: 1px solid #d7deea;
+  border-radius: 4px;
+  font: inherit;
+  min-block-size: 44px;
+  min-inline-size: 0;
+  padding-inline: 12px;
+}
+
+.admin-member-reset-result__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .member-page {
   padding: clamp(20px, 3vw, 32px);
   inline-size: min(100%, 760px);
