@@ -68,7 +68,6 @@ export const routes = [
     children: [
       { path: '', component: () => import('@/features/incident/views/IncidentListView.vue'), props: { mode: 'reception' } },
       { path: 'actions', component: () => import('@/features/incident/views/IncidentListView.vue'), props: { mode: 'action' } },
-      { path: 'actions/:incidentId', component: () => import('@/features/incident/views/IncidentActionView.vue') },
     ],
   },
   {

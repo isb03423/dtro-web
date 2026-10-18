@@ -7,21 +7,16 @@ import { INCIDENT_HISTORY_TITLES, INCIDENT_STATUSES } from '@/features/incident/
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDateTime } from '@/utils/date'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 
 const props = defineProps({
   incidentId: {
     type: Number,
-    default: null
-  },
-  popup: {
-    type: Boolean,
-    default: false
+    required: true
   }
 })
 
 const emit = defineEmits(['close'])
-const route = useRoute()
 
 const successMessages = {
   check: '장애 확인을 시작했습니다.',
@@ -50,7 +45,6 @@ const actionDetail = ref('')
 const reason = ref('')
 let requestId = 0
 let historyRequest = 0
-const activeId = computed(() => props.incidentId ?? route.params.incidentId)
 const canEditAction = computed(() => ['CHECKING', 'IN_PROGRESS', 'VERIFYING'].includes(incident.value?.status))
 
 const nextAction = computed(() => ({
@@ -93,7 +87,7 @@ const fn_load = async () => {
   loading.value = true
   error.value = ''
   try {
-    const data = await fn_getIncident(activeId.value)
+    const data = await fn_getIncident(props.incidentId)
     if (current !== requestId) {
       return
     }
@@ -193,7 +187,7 @@ onBeforeRouteLeave(fn_mayDiscard)
 
 onBeforeRouteUpdate(fn_mayDiscard)
 
-watch(activeId, fn_load, {
+watch(() => props.incidentId, fn_load, {
   immediate: true
 })
 
@@ -204,7 +198,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="train-page incident-page" :class="{ 'incident-action-popup': popup }">
+  <div class="train-page incident-page incident-action-popup">
     <header class="incident-intro train-page__intro">
       <div>
         <h2>운행 장애 조치 상세</h2>
@@ -212,20 +206,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="incident-actions">
         <button type="button" class="train-button" :disabled="loading || saving" @click="fn_refresh">새로 조회</button>
-        <button v-if="popup" type="button" class="train-button" :disabled="saving" @click="fn_close">닫기</button>
-        <RouterLink
-          v-else
-          to="/incidents/actions"
-          class="train-button"
-          :aria-disabled="saving"
-          @click="event => {
-            if (saving) {
-              event.preventDefault()
-            }
-          }"
-        >
-          목록
-        </RouterLink>
+        <button type="button" class="train-button" :disabled="saving" @click="fn_close">닫기</button>
       </div>
     </header>
     <div v-if="loading" class="incident-state" role="status">장애 내용을 불러오는 중입니다.</div>
