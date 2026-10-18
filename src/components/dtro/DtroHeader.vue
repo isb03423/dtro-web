@@ -20,8 +20,10 @@ const roleProfiles = {
 
 // 현재 권한에 맞는 프로필 표시 정보를 선택한다.
 const currentProfile = computed(() => roleProfiles[authStore.role])
+const profileName = computed(() => authStore.displayName ? `${authStore.displayName} 님` : currentProfile.value?.name)
+
 // 로그인·회원가입 화면인지 확인한다.
-const isAuthPage = computed(() => route.path === '/login' || route.path === '/register')
+const isAuthPage = computed(() => ['/login', '/register', '/session-error'].includes(route.path))
 
 // 프로필 메뉴를 닫는다.
 const fn_closeUserMenu = () => {
@@ -30,8 +32,9 @@ const fn_closeUserMenu = () => {
 
 // 프로필 메뉴 바깥 클릭을 감지해 메뉴를 닫는다.
 const fn_handleOutsideClick = event => {
-  if (userMenuRef.value && !userMenuRef.value.contains(event.target))
+  if (userMenuRef.value && !userMenuRef.value.contains(event.target)) {
     fn_closeUserMenu()
+  }
 }
 
 // 로그아웃 요청 후 첫 화면으로 이동한다.
@@ -40,8 +43,7 @@ const fn_logout = async () => {
     await authStore.logout()
     fn_closeUserMenu()
     await router.push('/')
-  }
-  catch (error) {
+  } catch (error) {
     logoutError.value = error.message
   }
 }
@@ -76,7 +78,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', fn_handleOutsi
         @click="isUserMenuOpen = !isUserMenuOpen"
       >
         <span class="user-menu__avatar" aria-hidden="true"><i class="bx bx-user" /></span>
-        <span class="user-menu__trigger-copy">{{ currentProfile.name }}</span>
+        <span class="user-menu__trigger-copy">{{ profileName }}</span>
         <i class="bx bx-chevron-down user-menu__chevron" aria-hidden="true" />
       </button>
 
@@ -84,7 +86,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', fn_handleOutsi
         <div class="user-menu__identity">
           <span class="user-menu__avatar user-menu__avatar--large" aria-hidden="true"><i class="bx bx-user" /></span>
           <span>
-            <strong>{{ currentProfile.name }}</strong>
+            <strong>{{ profileName }}</strong>
             <small>{{ currentProfile.label }}</small>
           </span>
         </div>

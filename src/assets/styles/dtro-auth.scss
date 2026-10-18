@@ -121,6 +121,13 @@
   font-size: 13px;
 }
 
+.auth-card__success {
+  margin-block: 0 12px;
+  color: #007f5f;
+  font-size: 13px;
+  text-align: center;
+}
+
 @media (max-width: 520px) {
   .auth-card.v-card,
   .auth-card--register.v-card {
