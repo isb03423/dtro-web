@@ -60,10 +60,6 @@ defineProps({
   background: rgb(var(--v-theme-background));
 }
 
-.dtro-shell--train .dtro-shell__content {
-  background: #ececec;
-}
-
 @media (max-width: 1100px) {
   .dtro-shell__layout { grid-template-columns: 220px minmax(0, 1fr); }
 }
