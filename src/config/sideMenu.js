@@ -12,7 +12,7 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
     roles: [APP_ROLES.ADMIN],
     items: [
       { label: '대시보드', to: '/dashboard' },
-      { label: '사용자 관리', href: '#user-management' },
+      { label: '사용자 관리', to: '/admin/members' },
     ],
   },
   {
