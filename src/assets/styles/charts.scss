@@ -1,0 +1,77 @@
+.app-donut-chart {
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.app-donut-chart__visual {
+  block-size: 220px;
+  inline-size: 220px;
+}
+
+.app-donut-chart__zero {
+  display: grid;
+  border: 28px solid #e9edf2;
+  border-radius: 50%;
+  block-size: 220px;
+  color: #75808f;
+  inline-size: 220px;
+  place-items: center center;
+  text-align: center;
+}
+
+.app-donut-chart__zero span {
+  display: grid;
+  gap: 2px;
+}
+
+.app-donut-chart__zero strong {
+  color: #263241;
+  font-size: 26px;
+}
+
+.app-donut-chart__legend {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  gap: 14px;
+  list-style: none;
+}
+
+.app-donut-chart__legend li {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+}
+
+.app-donut-chart__swatch {
+  border-radius: 50%;
+  block-size: 10px;
+  inline-size: 10px;
+}
+
+.app-donut-chart__label {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.app-donut-chart__legend strong {
+  color: #263241;
+  white-space: nowrap;
+}
+
+.app-donut-chart__legend small {
+  color: #75808f;
+  font-size: 12px;
+  grid-column: 2 / -1;
+}
+
+@media (max-width: 1100px) {
+  .app-donut-chart {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .app-donut-chart__legend { inline-size: 100%; }
+}
