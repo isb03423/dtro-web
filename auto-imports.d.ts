@@ -10,6 +10,7 @@ declare global {
   const INCIDENT_HISTORY_TITLES: typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_HISTORY_TITLES']
   const INCIDENT_STATUSES: typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_STATUSES']
   const INCIDENT_TYPES: typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_TYPES']
+  const MEMBER_ROLES: typeof import('./src/features/member/constants/memberOptions.js')['MEMBER_ROLES']
   const OPERATION_DIRECTIONS: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['OPERATION_DIRECTIONS']
   const TRAIN_LINES: typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['TRAIN_LINES']
   const TRAIN_STATUSES: typeof import('./src/features/train/constants/trainOptions.js')['TRAIN_STATUSES']
@@ -48,9 +49,11 @@ declare global {
   const fn_deleteIncidents: typeof import('./src/features/incident/api/incidentApi.js')['fn_deleteIncidents']
   const fn_deleteOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_deleteOperations']
   const fn_deleteTrain: typeof import('./src/features/train/api/trainApi.js')['fn_deleteTrain']
+  const fn_getAdminDashboard: typeof import('./src/features/admin/api/adminDashboardApi.js')['fn_getAdminDashboard']
   const fn_getIncident: typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncident']
   const fn_getIncidentHistory: typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncidentHistory']
   const fn_getTrain: typeof import('./src/features/train/api/trainApi.js')['fn_getTrain']
+  const fn_getTrainOverview: typeof import('./src/features/trainmanagement/api/trainOverviewApi.js')['fn_getTrainOverview']
   const fn_listIncidents: typeof import('./src/features/incident/api/incidentApi.js')['fn_listIncidents']
   const fn_listLines: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listLines']
   const fn_listOperations: typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listOperations']
@@ -365,6 +368,7 @@ declare module 'vue' {
     readonly INCIDENT_HISTORY_TITLES: UnwrapRef<typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_HISTORY_TITLES']>
     readonly INCIDENT_STATUSES: UnwrapRef<typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_STATUSES']>
     readonly INCIDENT_TYPES: UnwrapRef<typeof import('./src/features/incident/constants/incidentOptions.js')['INCIDENT_TYPES']>
+    readonly MEMBER_ROLES: UnwrapRef<typeof import('./src/features/member/constants/memberOptions.js')['MEMBER_ROLES']>
     readonly OPERATION_DIRECTIONS: UnwrapRef<typeof import('./src/features/trainoperation/constants/trainoperationOptions.js')['OPERATION_DIRECTIONS']>
     readonly TRAIN_STATUSES: UnwrapRef<typeof import('./src/features/train/constants/trainOptions.js')['TRAIN_STATUSES']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
@@ -402,9 +406,11 @@ declare module 'vue' {
     readonly fn_deleteIncidents: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_deleteIncidents']>
     readonly fn_deleteOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_deleteOperations']>
     readonly fn_deleteTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_deleteTrain']>
+    readonly fn_getAdminDashboard: UnwrapRef<typeof import('./src/features/admin/api/adminDashboardApi.js')['fn_getAdminDashboard']>
     readonly fn_getIncident: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncident']>
     readonly fn_getIncidentHistory: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_getIncidentHistory']>
     readonly fn_getTrain: UnwrapRef<typeof import('./src/features/train/api/trainApi.js')['fn_getTrain']>
+    readonly fn_getTrainOverview: UnwrapRef<typeof import('./src/features/trainmanagement/api/trainOverviewApi.js')['fn_getTrainOverview']>
     readonly fn_listIncidents: UnwrapRef<typeof import('./src/features/incident/api/incidentApi.js')['fn_listIncidents']>
     readonly fn_listLines: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listLines']>
     readonly fn_listOperations: UnwrapRef<typeof import('./src/features/trainoperation/api/trainoperationApi.js')['fn_listOperations']>

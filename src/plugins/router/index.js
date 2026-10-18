@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { store } from '@/plugins/pinia'
 import { useAuthStore } from '@/stores/auth'
+import { APP_ROLES } from '@/config/sideMenu'
 import { routes } from './routes'
 
 const router = createRouter({
@@ -35,7 +36,7 @@ router.beforeEach(async to => {
   }
 
   if (to.path === '/' && authStore.isAuthenticated) {
-    return '/dashboard'
+    return authStore.role === APP_ROLES.ADMIN ? '/admin/dashboard' : '/dashboard'
   }
 })
 
