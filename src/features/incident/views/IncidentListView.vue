@@ -13,7 +13,7 @@ import {
   fn_saveIncident,
 } from '@/features/incident/api/incidentApi'
 import { INCIDENT_HISTORY_TITLES, INCIDENT_STATUSES, INCIDENT_TYPES } from '@/features/incident/constants/incidentOptions'
-import IncidentActionView from '@/features/incident/views/IncidentActionView.vue'
+import IncidentActionDetail from '@/features/incident/components/IncidentActionDetail.vue'
 import { fn_listOperations } from '@/features/trainoperation/api/trainoperationApi'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDateTime, gfn_formatDateTimeInput } from '@/utils/date'
@@ -576,10 +576,9 @@ onBeforeUnmount(() => {
     />
     <VDialog :model-value="actionIncidentId !== null" max-width="1280" persistent>
       <VCard class="incident-action-dialog" elevation="0">
-        <IncidentActionView
+        <IncidentActionDetail
           v-if="actionIncidentId !== null"
           :incident-id="actionIncidentId"
-          popup
           @close="fn_closeAction"
         />
       </VCard>
