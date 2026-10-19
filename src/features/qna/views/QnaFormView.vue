@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import DATextEditor from '@/components/common/DATextEditor.vue'
+import CustomerServiceStationFields from '@/features/customerservice/components/CustomerServiceStationFields.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
@@ -18,6 +19,7 @@ const loading = ref(false)
 const replyContent = ref('')
 const replyEditor = ref(null)
 const replyError = ref('')
+const canCreate = computed(() => auth.isAuthenticated && [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
 const canAnswer = computed(() => isAdmin.value && qna.value?.status === 'PENDING')
 const contentEditor = ref(null)
@@ -75,7 +77,7 @@ const fn_validate = () => {
 }
 
 const fn_save = async () => {
-  if (saving.value || loading.value || (isEdit.value && !qna.value)) return
+  if (saving.value || loading.value || (!isEdit.value && !canCreate.value) || (isEdit.value && !qna.value)) return
 
   // 에디터의 최신 HTML 내용을 검증하고 동일한 값으로 저장한다.
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
@@ -148,9 +150,10 @@ const fn_answer = async () => {
       내용을 불러오지 못했습니다.
       <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
+    <VCard v-else-if="!isEdit && !canCreate" class="train-card train-card__state" elevation="0" role="alert">질문을 등록할 권한이 없습니다.</VCard>
     <VCard v-else id="qna-form" class="train-card" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
       <div class="train-field-grid train-field-grid--form">
-        <label class="qna-field--full">
+        <label>
           <span>제목 *</span>
           <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
           <small v-if="errors.title">{{ errors.title }}</small>
@@ -163,11 +166,7 @@ const fn_answer = async () => {
           </select>
           <small v-if="errors.type">{{ errors.type }}</small>
         </label>
-        <label>
-          <span>역 이름 *</span>
-          <input v-model.trim="form.station" type="text" maxlength="30" :disabled="saving" :aria-invalid="Boolean(errors.station)" />
-          <small v-if="errors.station">{{ errors.station }}</small>
-        </label>
+        <CustomerServiceStationFields v-model="form.station" :disabled="saving" :error="errors.station" />
         <div class="qna-field--full qna-editor-field" role="group" aria-labelledby="qna-content-label" :aria-invalid="Boolean(errors.content)">
           <span id="qna-content-label">내용 *</span>
           <DATextEditor
@@ -211,7 +210,7 @@ const fn_answer = async () => {
     <div class="train-actions">
       <RouterLink class="train-button" :to="listTo">목록</RouterLink>
       <RouterLink class="train-button" :to="cancelTo">취소</RouterLink>
-      <button class="train-button train-button--primary" type="submit" form="qna-form" :disabled="saving || loading || (isEdit && !qna)">
+      <button v-if="isEdit || canCreate" class="train-button train-button--primary" type="submit" form="qna-form" :disabled="saving || loading || (isEdit && !qna)">
         {{ saving ? '저장 중...' : '저장' }}
       </button>
       <button v-if="canAnswer && !loading" class="train-button train-button--primary" type="submit" form="qna-answer-form" :disabled="saving">

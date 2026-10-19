@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import DATextEditor from '@/components/common/DATextEditor.vue'
+import DAReadonlyTextarea from '@/components/common/DAReadonlyTextarea.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteQna, fn_getQna } from '@/features/qna/api/qnaApi'
 import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
@@ -99,7 +99,7 @@ const fn_remove = async () => {
           <div class="qna-field--full">
             <dt>내용</dt>
             <dd class="qna-editor-view">
-              <DATextEditor :model-value="qna.content || ''" :editable="false" :maxlength="null" min-height="250px" />
+              <DAReadonlyTextarea :model-value="qna.content || ''" label="질문 내용" />
             </dd>
           </div>
         </dl>
@@ -108,7 +108,7 @@ const fn_remove = async () => {
       <VCard class="train-card qna-answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
         <h2 id="qna-answer-heading">답변</h2>
         <div v-if="qna.status === 'ANSWERED'" class="qna-editor-view">
-          <DATextEditor :model-value="qna.replyContent || ''" :editable="false" :maxlength="null" min-height="250px" />
+          <DAReadonlyTextarea :model-value="qna.replyContent || ''" label="질문 답변" />
         </div>
         <p v-else>아직 등록된 답변이 없습니다.</p>
       </VCard>

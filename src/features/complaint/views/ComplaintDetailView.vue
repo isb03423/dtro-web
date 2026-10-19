@@ -1,6 +1,8 @@
 <script setup>
-import { ref, watch } from 'vue'
-import DATextEditor from '@/components/common/DATextEditor.vue'
+import { computed, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { APP_ROLES } from '@/config/sideMenu'
+import DAReadonlyTextarea from '@/components/common/DAReadonlyTextarea.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteComplaint, fn_getComplaint } from '@/features/complaint/api/complaintApi'
 import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
@@ -10,11 +12,17 @@ import '../styles/complaint.scss'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const complaint = ref(null)
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref('')
 const listTo = '/complaints'
+const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+const isOwner = computed(() => auth.memberId != null && complaint.value?.createdBy != null
+  && String(auth.memberId) === String(complaint.value.createdBy))
+const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && isOwner.value && complaint.value?.status === 'PENDING')
+const canAnswer = computed(() => isAdmin.value && complaint.value?.status === 'PENDING')
 let latestRequestId = 0
 
 const fn_load = async () => {
@@ -99,7 +107,7 @@ const fn_remove = async () => {
           <div class="complaint-field--full">
             <dt>내용</dt>
             <dd class="complaint-editor-view">
-              <DATextEditor :model-value="complaint.content || ''" :editable="false" :maxlength="null" min-height="250px" />
+              <DAReadonlyTextarea :model-value="complaint.content || ''" label="민원 내용" />
             </dd>
           </div>
         </dl>
@@ -108,7 +116,7 @@ const fn_remove = async () => {
       <VCard class="train-card complaint-answer" elevation="0" tag="section" aria-labelledby="complaint-answer-heading">
         <h2 id="complaint-answer-heading">답변</h2>
         <div v-if="complaint.status === 'ANSWERED'" class="complaint-editor-view">
-          <DATextEditor :model-value="complaint.replyContent || ''" :editable="false" :maxlength="null" min-height="250px" />
+          <DAReadonlyTextarea :model-value="complaint.replyContent || ''" label="민원 답변" />
         </div>
         <p v-else>아직 등록된 답변이 없습니다.</p>
       </VCard>
@@ -120,8 +128,8 @@ const fn_remove = async () => {
       <button v-if="complaint && !loading" class="train-button" type="button" :disabled="deleting" @click="fn_remove">
         {{ deleting ? '삭제 중...' : '삭제' }}
       </button>
-      <RouterLink v-if="complaint && !loading && !deleting" class="train-button train-button--primary" :to="`/complaints/${complaint.id}/edit`">
-        수정
+      <RouterLink v-if="(canEdit || canAnswer) && !loading && !deleting" class="train-button train-button--primary" :to="`/complaints/${complaint.id}/edit`">
+        {{ canAnswer ? '답변 등록' : '수정' }}
       </RouterLink>
     </div>
   </div>

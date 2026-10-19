@@ -1,4 +1,6 @@
 <script setup>
+import { APP_ROLES } from '@/config/sideMenu'
+import { useAuthStore } from '@/stores/auth'
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
 import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useListState } from '@/composables/useListState'
@@ -7,10 +9,13 @@ import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import '../styles/qna.scss'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
+const auth = useAuthStore()
+const canCreate = computed(() => auth.isAuthenticated && [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER].includes(auth.role))
 const router = useRouter()
+const route = useRoute()
 
 const searchFields = [
   { key: 'qnaType', label: '질문 유형', type: 'select', options: QNA_TYPES },
@@ -83,7 +88,14 @@ const fn_load = async () => {
   }
 }
 
-onMounted(fn_load)
+// 현황 카드와 브라우저 뒤로 가기의 상태 조건을 목록에 반영한다.
+watch(() => route.query.qnaStatus, value => {
+  const status = QNA_STATUSES.some(item => item.value === value) ? value : ''
+
+  applyFilters({ ...filters.value, qnaStatus: status })
+  draft.value = { ...filters.value }
+  fn_load()
+}, { immediate: true })
 
 const fn_search = () => {
   applyFilters(draft.value)
@@ -147,7 +159,7 @@ const fn_rowProps = ({ item }) => ({
               <h2>목록</h2>
               <span>총 {{ result.totalElements }}건</span>
             </div>
-            <RouterLink class="train-button train-button--primary" to="/qnas/new"> 질문 등록 </RouterLink>
+            <RouterLink v-if="canCreate" class="train-button train-button--primary" to="/qnas/new"> 질문 등록 </RouterLink>
           </div>
 
           <div class="train-table-wrap">

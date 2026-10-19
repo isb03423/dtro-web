@@ -17,6 +17,9 @@ export const useAuthStore = defineStore('auth', () => {
   // 사용자 정보에서 화면에 표시할 이름을 구한다.
   const displayName = computed(() => account.value?.name ?? '')
 
+  // 민원 작성자 확인에 사용하는 로그인 회원 ID다.
+  const memberId = computed(() => account.value?.id ?? null)
+
   // 현재 계정의 로그인 여부를 판단한다.
   const isAuthenticated = computed(() => role.value !== APP_ROLES.GUEST)
 
@@ -65,6 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
     role,
     username,
     displayName,
+    memberId,
     isAuthenticated,
     restore: fn_restore,
     login: fn_login,

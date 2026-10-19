@@ -1,4 +1,6 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'
+import { APP_ROLES } from '@/config/sideMenu'
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
 import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useListState } from '@/composables/useListState'
@@ -7,10 +9,12 @@ import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/consta
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import '../styles/complaint.scss'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
 
 const searchFields = [
   { key: 'complaintType', label: '민원 유형', type: 'select', options: COMPLAINT_TYPES },
@@ -83,7 +87,14 @@ const fn_load = async () => {
   }
 }
 
-onMounted(fn_load)
+// 현황 카드와 브라우저 뒤로 가기의 상태 조건을 목록에 반영한다.
+watch(() => route.query.complaintStatus, value => {
+  const status = COMPLAINT_STATUSES.some(item => item.value === value) ? value : ''
+
+  applyFilters({ ...filters.value, complaintStatus: status })
+  draft.value = { ...filters.value }
+  fn_load()
+}, { immediate: true })
 
 const fn_search = () => {
   applyFilters(draft.value)
@@ -147,7 +158,7 @@ const fn_rowProps = ({ item }) => ({
               <h2>목록</h2>
               <span>총 {{ result.totalElements }}건</span>
             </div>
-            <RouterLink class="train-button train-button--primary" to="/complaints/new"> 민원 등록 </RouterLink>
+            <RouterLink v-if="auth.role === APP_ROLES.USER" class="train-button train-button--primary" to="/complaints/new"> 민원 등록 </RouterLink>
           </div>
 
           <div class="train-table-wrap">
