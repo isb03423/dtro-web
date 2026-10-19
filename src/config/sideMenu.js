@@ -41,8 +41,8 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
     title: '고객 서비스',
     roles: [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN],
     items: [
-      { label: '민원', href: '#complaints' },
-      { label: '질문 및 답변', href: '#questions-and-answers' },
+      { label: '민원', to: '/complaints' },
+      { label: '질문 및 답변', to: '/qnas' },
     ],
   },
 ])
