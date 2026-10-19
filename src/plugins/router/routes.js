@@ -64,9 +64,6 @@ export const routes = [
     meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
     children: [
       { path: '', component: () => import('@/features/train/views/TrainListView.vue') },
-      { path: 'new', component: () => import('@/features/train/views/TrainFormView.vue') },
-      { path: ':trainId', component: () => import('@/features/train/views/TrainDetailView.vue') },
-      { path: ':trainId/edit', component: () => import('@/features/train/views/TrainFormView.vue') },
     ],
   },
   {
