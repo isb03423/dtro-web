@@ -1,7 +1,7 @@
 <script setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useDisplay } from 'vuetify'
-import logo from '@images/logo.svg?raw'
+import logo from '@images/devtro/devtro_logo.svg?raw'
 
 const props = defineProps({
   tag: {
@@ -27,12 +27,15 @@ Close overlay vertical nav when link is clicked
 */
 const route = useRoute()
 
-watch(() => route.path, () => {
-  props.toggleIsOverlayNavActive(false)
-})
+watch(
+  () => route.path,
+  () => {
+    props.toggleIsOverlayNavActive(false)
+  }
+)
 
 const isVerticalNavScrolled = ref(false)
-const updateIsVerticalNavScrolled = val => isVerticalNavScrolled.value = val
+const updateIsVerticalNavScrolled = val => (isVerticalNavScrolled.value = val)
 
 const handleNavScroll = evt => {
   isVerticalNavScrolled.value = evt.target.scrollTop > 0
@@ -47,8 +50,8 @@ const handleNavScroll = evt => {
     class="layout-vertical-nav"
     :class="[
       {
-        'visible': isOverlayNavActive,
-        'scrolled': isVerticalNavScrolled,
+        visible: isOverlayNavActive,
+        scrolled: isVerticalNavScrolled,
         'overlay-nav': mdAndDown,
       },
     ]"
@@ -56,28 +59,17 @@ const handleNavScroll = evt => {
     <!-- 👉 Header -->
     <div class="nav-header">
       <slot name="nav-header">
-        <RouterLink
-          to="/"
-          class="app-logo app-title-wrapper"
-        >
-          <div
-            class="d-flex"
-            v-html="logo"
-          />
+        <RouterLink to="/" class="app-logo app-title-wrapper">
+          <div class="d-flex" v-html="logo" />
 
-          <h1 class="leading-normal">
-            sneat
-          </h1>
+          <h1 class="leading-normal">sneat</h1>
         </RouterLink>
       </slot>
     </div>
     <slot name="before-nav-items">
       <div class="vertical-nav-items-shadow" />
     </slot>
-    <slot
-      name="nav-items"
-      :update-is-vertical-nav-scrolled="updateIsVerticalNavScrolled"
-    >
+    <slot name="nav-items" :update-is-vertical-nav-scrolled="updateIsVerticalNavScrolled">
       <PerfectScrollbar
         tag="ul"
         class="nav-items"
@@ -107,8 +99,8 @@ const handleNavScroll = evt => {
 </style>
 
 <style lang="scss">
-@use "@configured-variables" as variables;
-@use "@layouts/styles/mixins";
+@use '@configured-variables' as variables;
+@use '@layouts/styles/mixins';
 
 // 👉 Vertical Nav
 .layout-vertical-nav {
@@ -120,7 +112,9 @@ const handleNavScroll = evt => {
   inline-size: variables.$layout-vertical-nav-width;
   inset-block-start: 0;
   inset-inline-start: 0;
-  transition: inline-size 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+  transition:
+    inline-size 0.25s ease-in-out,
+    box-shadow 0.25s ease-in-out;
   will-change: transform, inline-size;
 
   .nav-header {
