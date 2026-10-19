@@ -1,19 +1,15 @@
 <script setup>
-import stationImage from '@images/dtro/drawing-03-station.svg?url'
+import stationImage from '@images/devtro/drawing-03-station.svg?url'
 </script>
 
 <template>
   <figure class="station-visual">
-    <img
-      class="station-visual__image"
-      :src="stationImage"
-      alt="대구 도시철도 열차와 캐릭터가 있는 역사 전경"
-    >
+    <img class="station-visual__image" :src="stationImage" alt="대구 도시철도 열차와 캐릭터가 있는 역사 전경" />
   </figure>
 </template>
 
 <style lang="scss" scoped>
-@use "@styles/variables/dtro" as dtro;
+@use '@styles/variables/dtro' as dtro;
 
 .station-visual {
   inline-size: 100%;

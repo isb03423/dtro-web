@@ -2,6 +2,7 @@
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
 import AppGridSelectDialog from '@/components/common/AppGridSelectDialog.vue'
 import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useGridState } from '@/composables/useGridState'
 import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 import { fn_listTrains } from '@/features/train/api/trainApi'
@@ -49,7 +50,7 @@ const popupColumns = {
   station: [
     { title: '역 코드', key: 'stationCode' },
     { title: '역 이름', key: 'stationName' },
-  ]
+  ],
 }
 
 // 검색 조건의 기본값을 만든다.
@@ -57,7 +58,7 @@ const fn_emptyFilters = () => ({
   trainId: null,
   trainNumber: '',
   lineCode: '',
-  direction: ''
+  direction: '',
 })
 
 const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
@@ -69,7 +70,7 @@ const selected = ref([])
 
 const result = ref({
   totalElements: 0,
-  totalPages: 0
+  totalPages: 0,
 })
 
 const {
@@ -77,14 +78,20 @@ const {
   size: pageSize,
   sort,
   gridSort,
-  setGridOptions
+  setGridOptions,
 } = gfn_useGridState({
-  defaultSort: 'id,desc'
+  defaultSort: 'id,desc',
 })
 
 const lines = ref([])
 const loading = ref(false)
 const saving = ref(false)
+
+const searchFields = computed(() => [
+  { key: 'lineCode', label: '노선', type: 'select', options: lines.value.map(code => ({ value: code, label: `${code}호선` })) },
+  { key: 'direction', label: '방향', type: 'select', options: directions },
+  { key: 'trainNumber', label: '열차번호', type: 'picker', placeholder: '열차번호 선택', wide: true },
+])
 
 const popup = ref({
   open: false,
@@ -92,25 +99,33 @@ const popup = ref({
   target: null,
   field: '',
   rows: [],
-  loading: false
+  loading: false,
 })
 
 let nextDraftId = 0
 let requestId = 0
 
-const hasChanges = computed(() => rows.value.some(row => row._new || JSON.stringify(fn_payload(row)) !== original.value.get(row.id)))
+const hasChanges = computed(() =>
+  rows.value.some(row => row._new || JSON.stringify(fn_payload(row)) !== original.value.get(row.id))
+)
 
-const popupTitle = computed(() => ({
-  train: '열차번호 선택',
-  line: '노선 선택',
-  station: '역 선택'
-})[popup.value.kind] || '')
+const popupTitle = computed(
+  () =>
+    ({
+      train: '열차번호 선택',
+      line: '노선 선택',
+      station: '역 선택',
+    })[popup.value.kind] || ''
+)
 
-const popupKey = computed(() => ({
-  train: 'id',
-  line: 'lineCode',
-  station: 'stationCode'
-})[popup.value.kind] || 'id')
+const popupKey = computed(
+  () =>
+    ({
+      train: 'id',
+      line: 'lineCode',
+      station: 'stationCode',
+    })[popup.value.kind] || 'id'
+)
 
 const popupContext = computed(() => {
   if (popup.value.kind !== 'station') {
@@ -129,7 +144,7 @@ const fn_payload = row => ({
   departureStationCode: row.departureStationCode,
   arrivalStationCode: row.arrivalStationCode,
   firstTrainTime: row.firstTrainTime?.slice(0, 5) || '',
-  lastTrainTime: row.lastTrainTime?.slice(0, 5) || ''
+  lastTrainTime: row.lastTrainTime?.slice(0, 5) || '',
 })
 
 // 현재 검색 조건으로 조회하고 최신 요청 결과만 반영한다.
@@ -144,7 +159,7 @@ const fn_load = async () => {
       direction: filters.value.direction,
       page: page.value,
       size: pageSize.value,
-      sort: sort.value
+      sort: sort.value,
     })
 
     if (current !== requestId) {
@@ -153,7 +168,7 @@ const fn_load = async () => {
     rows.value = data.content.map(row => ({
       ...row,
       firstTrainTime: row.firstTrainTime?.slice(0, 5) || '',
-      lastTrainTime: row.lastTrainTime?.slice(0, 5) || ''
+      lastTrainTime: row.lastTrainTime?.slice(0, 5) || '',
     }))
     result.value = data
     original.value = new Map(rows.value.map(row => [row.id, JSON.stringify(fn_payload(row))]))
@@ -170,7 +185,8 @@ const fn_load = async () => {
 }
 
 // 저장하지 않은 변경사항을 버릴지 확인한다.
-const fn_mayDiscard = async () => !hasChanges.value || (await askConfirm('계속 진행하시겠습니까?', '저장하지 않은 변경사항이 사라집니다.'))
+const fn_mayDiscard = async () =>
+  !hasChanges.value || (await askConfirm('계속 진행하시겠습니까?', '저장하지 않은 변경사항이 사라집니다.'))
 
 // 입력한 검색 조건을 반영하고 목록을 다시 조회한다.
 const fn_search = async () => {
@@ -178,7 +194,7 @@ const fn_search = async () => {
     return
   }
   filters.value = {
-    ...draftFilters.value
+    ...draftFilters.value,
   }
   page.value = 0
   fn_load()
@@ -211,20 +227,21 @@ const fn_updateGridOptions = async options => {
 }
 
 // 새 운행정보를 입력할 행을 추가한다.
-const fn_add = () => rows.value.unshift({
-  id: `new-${++nextDraftId}`,
-  _new: true,
-  trainId: null,
-  trainNumber: '',
-  lineCode: '',
-  direction: 'DOWN',
-  departureStationCode: '',
-  departureStationName: '',
-  arrivalStationCode: '',
-  arrivalStationName: '',
-  firstTrainTime: '',
-  lastTrainTime: ''
-})
+const fn_add = () =>
+  rows.value.unshift({
+    id: `new-${++nextDraftId}`,
+    _new: true,
+    trainId: null,
+    trainNumber: '',
+    lineCode: '',
+    direction: 'DOWN',
+    departureStationCode: '',
+    departureStationName: '',
+    arrivalStationCode: '',
+    arrivalStationName: '',
+    firstTrainTime: '',
+    lastTrainTime: '',
+  })
 
 // 선택한 행의 출발역과 도착역을 초기화한다.
 const fn_clearStations = row => {
@@ -261,7 +278,7 @@ const fn_openPopup = async (kind, target = null, field = '') => {
     target,
     field,
     rows: [],
-    loading: true
+    loading: true,
   }
   try {
     let options
@@ -273,38 +290,42 @@ const fn_openPopup = async (kind, target = null, field = '') => {
         response = await fn_listTrains({
           page: trainPage++,
           size: 100,
-          sort: 'id,asc'
+          sort: 'id,asc',
         })
-        options.push(...response.content.map(train => ({
-          ...train,
-          statusLabel: TRAIN_STATUSES.find(option => option.value === train.status)?.label ?? train.status
-        })))
+        options.push(
+          ...response.content.map(train => ({
+            ...train,
+            statusLabel: TRAIN_STATUSES.find(option => option.value === train.status)?.label ?? train.status,
+          }))
+        )
       } while (trainPage < response.totalPages)
     } else if (kind === 'line') {
-      options = await Promise.all(lines.value.map(async code => {
-        const stations = await fn_listStations(code, 'DOWN')
+      options = await Promise.all(
+        lines.value.map(async code => {
+          const stations = await fn_listStations(code, 'DOWN')
 
-        return {
-          lineCode: code,
-          lineLabel: `${code}호선`,
-          firstStation: stations[0]?.stationName || '',
-          lastStation: stations.at(-1)?.stationName || ''
-        }
-      }))
+          return {
+            lineCode: code,
+            lineLabel: `${code}호선`,
+            firstStation: stations[0]?.stationName || '',
+            lastStation: stations.at(-1)?.stationName || '',
+          }
+        })
+      )
     } else {
       options = await fn_listStations(target.lineCode, target.direction)
     }
     popup.value = {
       ...popup.value,
       rows: options,
-      loading: false
+      loading: false,
     }
   } catch (cause) {
     showMessage('error', '오류가 발생했습니다', cause.message)
     popup.value = {
       ...popup.value,
       open: false,
-      loading: false
+      loading: false,
     }
   }
 }
@@ -319,7 +340,9 @@ const fn_stationDisabled = station => {
     return false
   }
 
-  return popup.value.target.direction === 'DOWN' ? station.stationOrder <= departure.stationOrder : station.stationOrder >= departure.stationOrder
+  return popup.value.target.direction === 'DOWN'
+    ? station.stationOrder <= departure.stationOrder
+    : station.stationOrder >= departure.stationOrder
 }
 
 // 선택한 항목을 검색 조건 또는 그리드 행에 반영한다.
@@ -353,8 +376,22 @@ const fn_save = async () => {
   if (!changed.length) {
     return
   }
-  if (changed.some(row => !row.trainId || !row.lineCode || !row.departureStationCode || !row.arrivalStationCode || !row.firstTrainTime || !row.lastTrainTime)) {
-    showMessage('warning', '입력값을 확인해주세요', '변경된 행의 열차, 노선, 출발역, 도착역, 출발·도착시각을 모두 입력해주세요.')
+  if (
+    changed.some(
+      row =>
+        !row.trainId ||
+        !row.lineCode ||
+        !row.departureStationCode ||
+        !row.arrivalStationCode ||
+        !row.firstTrainTime ||
+        !row.lastTrainTime
+    )
+  ) {
+    showMessage(
+      'warning',
+      '입력값을 확인해주세요',
+      '변경된 행의 열차, 노선, 출발역, 도착역, 출발·도착시각을 모두 입력해주세요.'
+    )
 
     return
   }
@@ -372,25 +409,44 @@ const fn_save = async () => {
 
 // 삭제 가능 여부와 선택 항목을 확인한 뒤 삭제한다.
 const fn_remove = async () => {
-  if (!selected.value.length || !(await askConfirm('계속 진행하시겠습니까?', `선택한 ${selected.value.length}건을 삭제하시겠습니까?`, '삭제'))) {
+  if (
+    !selected.value.length ||
+    !(await askConfirm('계속 진행하시겠습니까?', `선택한 ${selected.value.length}건을 삭제하시겠습니까?`, '삭제'))
+  ) {
     return
   }
+
   const count = selected.value.length
   const ids = selected.value.filter(id => typeof id === 'number')
-  const unsavedSurvivors = rows.value.some(row => !selected.value.includes(row.id) && (row._new || JSON.stringify(fn_payload(row)) !== original.value.get(row.id)))
-  if (ids.length && unsavedSurvivors && !(await askConfirm('변경사항을 버리시겠습니까?', '삭제 후 목록을 다시 조회하면 다른 행의 저장하지 않은 변경사항이 사라집니다.'))) {
+
+  const unsavedSurvivors = rows.value.some(
+    row =>
+      !selected.value.includes(row.id) && (row._new || JSON.stringify(fn_payload(row)) !== original.value.get(row.id))
+  )
+
+  if (
+    ids.length &&
+    unsavedSurvivors &&
+    !(await askConfirm(
+      '변경사항을 버리시겠습니까?',
+      '삭제 후 목록을 다시 조회하면 다른 행의 저장하지 않은 변경사항이 사라집니다.'
+    ))
+  ) {
     return
   }
+
   saving.value = true
   try {
     if (ids.length) {
       await fn_deleteOperations(ids)
     }
+
     rows.value = rows.value.filter(row => !selected.value.includes(row.id))
     selected.value = []
     if (ids.length) {
       await fn_load()
     }
+
     showMessage('success', '처리가 완료되었습니다', `${count}건 삭제했습니다.`)
   } catch (cause) {
     showMessage('error', '오류가 발생했습니다', cause.message)
@@ -416,40 +472,22 @@ onMounted(async () => {
 <template>
   <div class="train-page operation-page">
     <header class="train-page__intro">
-      <h2>열차 운행 정보 목록</h2>
+      <h2>열차 운행 정보</h2>
       <p>운행 정보를 조회하고 목록에서 등록·수정·삭제합니다.</p>
     </header>
     <VCard class="train-search-card" elevation="0">
-      <form class="operation-search" @submit.prevent="fn_search">
-        <label>
-          노선
-          <select v-model="draftFilters.lineCode">
-            <option value="">전체</option>
-            <option v-for="line in lines" :key="line" :value="line">{{ line }}호선</option>
-          </select>
-        </label>
-        <label>
-          방향
-          <select v-model="draftFilters.direction">
-            <option value="">전체</option>
-            <option v-for="option in directions" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </select>
-        </label>
-        <label>
-          열차번호
-          <button type="button" class="operation-picker" @click="fn_openPopup('train')">
-            <span class="operation-picker__text">{{ draftFilters.trainNumber || '열차번호 선택' }}</span>
-            <VIcon class="operation-picker__icon" icon="bx-search" aria-hidden="true" />
-          </button>
-        </label>
-        <button class="train-button train-button--primary" type="submit">검색</button>
-        <button class="train-button" type="button" @click="fn_reset">초기화</button>
-      </form>
+      <AppSearchCondition
+        v-model="draftFilters"
+        :fields="searchFields"
+        @search="fn_search"
+        @reset="fn_reset"
+        @pick="fn_openPopup('train')"
+      />
     </VCard>
     <VCard class="train-list-card" elevation="0">
       <div class="train-list__heading">
         <div>
-          <h2>운행 정보 목록</h2>
+          <h2>목록</h2>
           <span>총 {{ result.totalElements }}건</span>
         </div>
         <div class="operation-actions">
