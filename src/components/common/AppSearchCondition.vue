@@ -4,7 +4,7 @@ const props = defineProps({
   modelValue: { type: Object, required: true },
 })
 
-const emit = defineEmits(['update:modelValue', 'search', 'reset'])
+const emit = defineEmits(['update:modelValue', 'search', 'reset', 'pick'])
 
 // 입력값을 해당 검색 필드에 반영한다.
 const fn_updateValue = (field, value) => {
@@ -24,7 +24,15 @@ const fn_reset = () => emit('reset')
 
 <template>
   <!-- fields 설정에 따라 선택 상자와 입력창을 공통으로 그린다. -->
-  <form class="app-search-condition" :style="{ '--field-count': fields.length }" @submit.prevent="fn_search">
+  <form
+    class="app-search-condition"
+    :class="{
+      'app-search-condition--two-fields': fields.length === 2,
+      'app-search-condition--three-fields': fields.length === 3,
+    }"
+    :style="{ '--field-count': fields.length }"
+    @submit.prevent="fn_search"
+  >
     <label v-for="field in fields" :key="field.key" :class="{ 'app-search-condition__wide': field.wide }">
       <span>{{ field.label }}</span>
       <select
@@ -37,6 +45,18 @@ const fn_reset = () => emit('reset')
           {{ option.label }}
         </option>
       </select>
+      <button
+        v-else-if="field.type === 'picker'"
+        class="app-search-condition__picker"
+        type="button"
+        :aria-label="`${field.label}: ${modelValue[field.key] || field.placeholder || '선택'}`"
+        @click="emit('pick', field.key)"
+      >
+        <span :class="{ 'app-search-condition__placeholder': !modelValue[field.key] }">
+          {{ modelValue[field.key] || field.placeholder || '선택' }}
+        </span>
+        <VIcon icon="bx-search" aria-hidden="true" />
+      </button>
       <input
         v-else
         :type="field.type ?? 'text'"
@@ -54,21 +74,26 @@ const fn_reset = () => emit('reset')
 .app-search-condition {
   display: grid;
   align-items: end;
-  padding: 20px;
-  border-radius: 6px;
-  background: #fff;
-  gap: 16px;
-  grid-template-columns: repeat(var(--field-count), minmax(170px, 1fr)) repeat(2, minmax(110px, 150px));
+  gap: 12px;
+  grid-template-columns: repeat(var(--field-count), minmax(120px, 1fr)) auto auto;
+}
+.app-search-condition--two-fields {
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto auto;
+}
+.app-search-condition--three-fields {
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(200px, 1.6fr) auto auto;
 }
 
 .app-search-condition label { display: flex; min-inline-size: 0; flex-direction: column; gap: 8px; }
-.app-search-condition label span { color: #263241; font-size: 15px; font-weight: 700; }
+.app-search-condition label > span { color: #263241; font-size: 15px; font-weight: 400; }
 .app-search-condition input,
-.app-search-condition select {
+.app-search-condition select,
+.app-search-condition__picker {
+  box-sizing: border-box;
   inline-size: 100%;
   min-inline-size: 0;
-  block-size: 44px;
-  padding-inline: 12px;
+  block-size: 40px;
+  padding: 6px 10px;
   border: 1px solid #d7deea;
   border-radius: 4px;
   background: #fff;
@@ -76,7 +101,22 @@ const fn_reset = () => emit('reset')
   font: inherit;
   font-size: 15px;
 }
-
+.app-search-condition__picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: start;
+}
+.app-search-condition__picker span {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-search-condition__picker .v-icon { flex: none; color: #064984; }
+.app-search-condition__placeholder { color: #738092; }
 .app-search-condition input::placeholder { color: #738092; }
 .app-search-condition__button {
   display: inline-flex;
@@ -92,22 +132,26 @@ const fn_reset = () => emit('reset')
   cursor: pointer;
   font: inherit;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .app-search-condition__button--primary { border-color: #064984; background: #064984; color: #fff; }
 .app-search-condition__button:hover:not(:disabled) { filter: brightness(.95); }
 .app-search-condition :is(button, input, select):focus-visible { outline: 3px solid #79b8f4; outline-offset: 2px; }
 
-@media (max-width: 1300px) {
-  .app-search-condition { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .app-search-condition,
+  .app-search-condition--two-fields,
+  .app-search-condition--three-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .app-search-condition__wide { grid-column: 1 / -1; }
 }
 
 @media (max-width: 600px) {
-  .app-search-condition { grid-template-columns: 1fr; padding: 16px; gap: 14px; }
+  .app-search-condition,
+  .app-search-condition--two-fields,
+  .app-search-condition--three-fields { grid-template-columns: 1fr; }
   .app-search-condition__wide { grid-column: auto; }
-  .app-search-condition :is(input, select) { block-size: 48px; font-size: 16px; }
+  .app-search-condition :is(input, select, .app-search-condition__picker) { block-size: 44px; font-size: 16px; }
   .app-search-condition__button { inline-size: 100%; block-size: 44px; }
 }
 </style>

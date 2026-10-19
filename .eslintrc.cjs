@@ -1,11 +1,14 @@
 
+const { existsSync } = require('node:fs')
+const { join } = require('node:path')
+
 module.exports = {
   env: {
     browser: true,
     es2021: true,
   },
   extends: [
-    '.eslintrc-auto-import.json',
+    ...(existsSync(join(__dirname, '.eslintrc-auto-import.json')) ? ['.eslintrc-auto-import.json'] : []),
     'plugin:vue/vue3-recommended',
     'plugin:import/recommended',
     'plugin:promise/recommended',

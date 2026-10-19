@@ -2,6 +2,7 @@
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
 import AppGridSelectDialog from '@/components/common/AppGridSelectDialog.vue'
 import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import AppStatusTimeline from '@/components/common/AppStatusTimeline.vue'
 import { gfn_useGridState } from '@/composables/useGridState'
 import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
@@ -12,7 +13,11 @@ import {
   fn_listIncidents,
   fn_saveIncident,
 } from '@/features/incident/api/incidentApi'
-import { INCIDENT_HISTORY_TITLES, INCIDENT_STATUSES, INCIDENT_TYPES } from '@/features/incident/constants/incidentOptions'
+import {
+  INCIDENT_HISTORY_TITLES,
+  INCIDENT_STATUSES,
+  INCIDENT_TYPES,
+} from '@/features/incident/constants/incidentOptions'
 import IncidentActionDetail from '@/features/incident/components/IncidentActionDetail.vue'
 import { fn_listOperations } from '@/features/trainoperation/api/trainoperationApi'
 import { gfn_getLabel } from '@/utils/common'
@@ -23,8 +28,8 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 const props = defineProps({
   mode: {
     type: String,
-    default: 'reception'
-  }
+    default: 'reception',
+  },
 })
 
 const columns = [
@@ -48,30 +53,24 @@ const operationColumns = [
   { title: '도착역', key: 'arrivalStationName' },
 ]
 
+const searchFields = [
+  { key: 'incidentType', label: '장애유형', type: 'select', options: INCIDENT_TYPES.map(type => ({ value: type, label: type })) },
+  { key: 'status', label: '처리상태', type: 'select', options: INCIDENT_STATUSES },
+  { key: 'operationLabel', label: '운행번호', type: 'picker', placeholder: '운행번호 선택', wide: true },
+]
+
 // 검색 조건의 기본값을 만든다.
 const fn_emptyFilters = () => ({
   incidentType: '',
   status: '',
   operationId: null,
-  operationLabel: ''
+  operationLabel: '',
 })
 
-const {
-  dialog,
-  finishDialog,
-  showMessage,
-  askConfirm
-} = gfn_useMessageDialog()
+const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
 
-const {
-  page,
-  size,
-  sort,
-  gridSort,
-  setGridOptions,
-  resetGridOptions
-} = gfn_useGridState({
-  defaultSort: ''
+const { page, size, sort, gridSort, setGridOptions, resetGridOptions } = gfn_useGridState({
+  defaultSort: '',
 })
 
 const draftFilters = ref(fn_emptyFilters())
@@ -97,7 +96,7 @@ const picker = ref({
   open: false,
   target: '',
   rows: [],
-  loading: false
+  loading: false,
 })
 
 const history = ref({
@@ -106,14 +105,15 @@ const history = ref({
   incidentNumber: '',
   rows: [],
   loading: false,
-  error: ''
+  error: '',
 })
 
 const isAction = computed(() => props.mode === 'action')
 const formDirty = computed(() => formOpen.value && !formLoading.value && fn_formSnapshot() !== originalForm.value)
 
 // 접수 양식의 수정 가능한 값으로 변경 비교값을 만든다.
-const fn_formSnapshot = () => JSON.stringify([form.value.operationId, form.value.incidentType, form.value.occurredAt, form.value.impactDetail])
+const fn_formSnapshot = () =>
+  JSON.stringify([form.value.operationId, form.value.incidentType, form.value.occurredAt, form.value.impactDetail])
 
 // 현재 검색 조건으로 조회하고 최신 요청 결과만 반영한다.
 const fn_load = async () => {
@@ -128,7 +128,7 @@ const fn_load = async () => {
       operationId: filters.value.operationId,
       page: page.value,
       size: size.value,
-      sort: sort.value
+      sort: sort.value,
     })
 
     if (current !== listRequest) {
@@ -153,7 +153,7 @@ const fn_load = async () => {
 // 입력한 검색 조건을 반영하고 목록을 다시 조회한다.
 const fn_search = () => {
   filters.value = {
-    ...draftFilters.value
+    ...draftFilters.value,
   }
   page.value = 0
   fn_load()
@@ -179,9 +179,11 @@ const fn_closeForm = async () => {
   if (saving.value) {
     return false
   }
+
   if (formDirty.value && !(await askConfirm('변경사항을 버리시겠습니까?', '저장하지 않은 접수 내용이 사라집니다.'))) {
     return false
   }
+
   ++detailRequest
   formOpen.value = false
 
@@ -202,13 +204,15 @@ const fn_openForm = async row => {
     occurredAt: gfn_formatDateTimeInput(new Date().toISOString()),
     impactDetail: '',
     actionDetail: '',
-    status: 'RECEIVED'
+    status: 'RECEIVED',
   }
+
   originalForm.value = fn_formSnapshot()
   formOpen.value = true
   if (!row) {
     return
   }
+
   try {
     const data = await fn_getIncident(row.id)
     if (current !== detailRequest) {
@@ -217,7 +221,7 @@ const fn_openForm = async row => {
     form.value = {
       ...data,
       occurredAt: gfn_formatDateTimeInput(data.occurredAt),
-      operationLabel: data.operationNumber
+      operationLabel: data.operationNumber,
     }
     originalForm.value = fn_formSnapshot()
   } catch (cause) {
@@ -236,7 +240,12 @@ const fn_saveForm = async () => {
   if (saving.value || formLoading.value || formError.value) {
     return
   }
-  if (!form.value.operationId || !form.value.incidentType?.trim() || !form.value.occurredAt || !form.value.impactDetail?.trim()) {
+  if (
+    !form.value.operationId ||
+    !form.value.incidentType?.trim() ||
+    !form.value.occurredAt ||
+    !form.value.impactDetail?.trim()
+  ) {
     showMessage('warning', '입력값을 확인해주세요', '운행번호, 장애유형, 발생일시, 영향범위를 모두 입력해주세요.')
 
     return
@@ -248,7 +257,7 @@ const fn_saveForm = async () => {
       incidentType: form.value.incidentType.trim(),
       occurredAt: `${form.value.occurredAt}:00+09:00`,
       impactDetail: form.value.impactDetail.trim(),
-      version: form.value.version ?? null
+      version: form.value.version ?? null,
     })
     formOpen.value = false
     await fn_load()
@@ -271,7 +280,13 @@ const fn_remove = async () => {
 
     return
   }
-  if (!(await askConfirm('장애를 삭제하시겠습니까?', `선택한 ${targets.length}건과 해당 상태 이력이 함께 삭제됩니다.`, '삭제'))) {
+  if (
+    !(await askConfirm(
+      '장애를 삭제하시겠습니까?',
+      `선택한 ${targets.length}건과 해당 상태 이력이 함께 삭제됩니다.`,
+      '삭제'
+    ))
+  ) {
     return
   }
   saving.value = true
@@ -297,7 +312,7 @@ const fn_openOperationPicker = async target => {
     open: true,
     target,
     rows: [],
-    loading: true
+    loading: true,
   }
   try {
     const options = []
@@ -307,7 +322,7 @@ const fn_openOperationPicker = async target => {
       data = await fn_listOperations({
         page: operationPage++,
         size: 100,
-        sort: 'id,desc'
+        sort: 'id,desc',
       })
       if (current !== pickerRequest) {
         return
@@ -365,7 +380,7 @@ const fn_openHistory = row => {
     incidentNumber: row.incidentNumber,
     rows: [],
     loading: true,
-    error: ''
+    error: '',
   }
   fn_loadHistory()
 }
@@ -383,14 +398,18 @@ onBeforeRouteLeave(fn_mayLeave)
 
 onBeforeRouteUpdate(fn_mayLeave)
 
-watch(() => props.mode, () => {
-  filters.value = fn_emptyFilters()
-  draftFilters.value = fn_emptyFilters()
-  resetGridOptions()
-  fn_load()
-}, {
-  immediate: true
-})
+watch(
+  () => props.mode,
+  () => {
+    filters.value = fn_emptyFilters()
+    draftFilters.value = fn_emptyFilters()
+    resetGridOptions()
+    fn_load()
+  },
+  {
+    immediate: true,
+  }
+)
 
 onBeforeUnmount(() => {
   ++listRequest
@@ -404,41 +423,27 @@ onBeforeUnmount(() => {
   <div class="train-page incident-page">
     <header class="train-page__intro">
       <h2>{{ isAction ? '운행 장애 조치' : '운행 장애 접수' }}</h2>
-      <p>{{ isAction ? '접수된 장애의 내용을 확인하고 조치 진행 상황을 관리합니다.' : '운행 장애를 접수하고 등록 내용을 조회·수정·삭제합니다.' }}</p>
+      <p>
+        {{
+          isAction
+            ? '접수된 장애의 내용을 확인하고 조치 진행 상황을 관리합니다.'
+            : '운행 장애를 접수하고 등록 내용을 조회·수정·삭제합니다.'
+        }}
+      </p>
     </header>
     <VCard class="train-search-card" elevation="0">
-      <form class="incident-search" @submit.prevent="fn_search">
-        <label>
-          장애유형
-          <select v-model="draftFilters.incidentType">
-            <option value="">전체</option>
-            <option v-for="type in INCIDENT_TYPES" :key="type">{{ type }}</option>
-          </select>
-        </label>
-        <label>
-          처리상태
-          <select v-model="draftFilters.status">
-            <option value="">전체</option>
-            <option v-for="status in INCIDENT_STATUSES" :key="status.value" :value="status.value">
-              {{ status.label }}
-            </option>
-          </select>
-        </label>
-        <label>
-          운행번호
-          <button type="button" class="incident-picker" @click="fn_openOperationPicker('filter')">
-            {{ draftFilters.operationLabel || '운행번호 선택' }}
-            <VIcon icon="bx-search" aria-hidden="true" />
-          </button>
-        </label>
-        <button class="train-button train-button--primary" type="submit">검색</button>
-        <button class="train-button" type="button" @click="fn_reset">초기화</button>
-      </form>
+      <AppSearchCondition
+        v-model="draftFilters"
+        :fields="searchFields"
+        @search="fn_search"
+        @reset="fn_reset"
+        @pick="fn_openOperationPicker('filter')"
+      />
     </VCard>
     <VCard class="train-list-card" elevation="0">
       <div class="train-list__heading">
         <div>
-          <h2>장애 {{ isAction ? '조치' : '접수' }} 목록</h2>
+          <h2>{{ isAction ? '조치' : '접수' }} 목록</h2>
           <span>총 {{ total }}건</span>
         </div>
         <div v-if="!isAction" class="incident-actions">
@@ -463,7 +468,9 @@ onBeforeUnmount(() => {
         <AppDataGrid
           v-model="selected"
           :columns="columns"
-          :column-width-key="isAction ? 'dtro:incident-action-column-widths:v2' : 'dtro:incident-reception-column-widths:v2'"
+          :column-width-key="
+            isAction ? 'dtro:incident-action-column-widths:v2' : 'dtro:incident-reception-column-widths:v2'
+          "
           :rows="rows"
           :total-items="total"
           :page="page + 1"
@@ -502,16 +509,24 @@ onBeforeUnmount(() => {
       :model-value="formOpen"
       max-width="760"
       :persistent="saving || formDirty"
-      @update:model-value="value => {
-        if (!value) {
-          fn_closeForm()
+      @update:model-value="
+        value => {
+          if (!value) {
+            fn_closeForm()
+          }
         }
-      }"
+      "
     >
       <VCard class="incident-dialog" elevation="0">
         <header class="incident-panel-heading">
           <h2>{{ form.id ? `장애 ${form.incidentNumber} 접수 내용` : '운행 장애 접수' }}</h2>
-          <button type="button" class="incident-close" aria-label="접수 팝업 닫기" :disabled="saving" @click="fn_closeForm">
+          <button
+            type="button"
+            class="incident-close"
+            aria-label="접수 팝업 닫기"
+            :disabled="saving"
+            @click="fn_closeForm"
+          >
             ×
           </button>
         </header>
@@ -587,7 +602,9 @@ onBeforeUnmount(() => {
       <VCard class="incident-dialog" elevation="0">
         <header class="incident-panel-heading">
           <h2>장애 {{ history.incidentNumber }} 처리 이력</h2>
-          <button class="incident-close" type="button" aria-label="이력 팝업 닫기" @click="history.open = false">×</button>
+          <button class="incident-close" type="button" aria-label="이력 팝업 닫기" @click="history.open = false">
+            ×
+          </button>
         </header>
         <div class="incident-history-body">
           <AppStatusTimeline

@@ -1,7 +1,3 @@
-<script setup>
-import avatar1 from '@images/avatars/avatar-1.png'
-</script>
-
 <template>
   <VBadge
     dot
@@ -16,7 +12,7 @@ import avatar1 from '@images/avatars/avatar-1.png'
       color="primary"
       variant="tonal"
     >
-      <VImg :src="avatar1" />
+      <VIcon icon="bx-user" />
 
       <!-- SECTION Menu -->
       <VMenu
@@ -41,7 +37,7 @@ import avatar1 from '@images/avatars/avatar-1.png'
                     color="primary"
                     variant="tonal"
                   >
-                    <VImg :src="avatar1" />
+                    <VIcon icon="bx-user" />
                   </VAvatar>
                 </VBadge>
               </VListItemAction>
