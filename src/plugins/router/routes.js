@@ -87,6 +87,28 @@ export const routes = [
     ],
   },
   {
+    path: '/complaints',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['USER', 'TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/complaint/views/ComplaintListView.vue') },
+      { path: 'new', component: () => import('@/features/complaint/views/ComplaintFormView.vue') },
+      { path: ':complaintId', component: () => import('@/features/complaint/views/ComplaintDetailView.vue') },
+      { path: ':complaintId/edit', component: () => import('@/features/complaint/views/ComplaintFormView.vue') },
+    ],
+  },
+  {
+    path: '/qnas',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['USER', 'TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/qna/views/QnaListView.vue') },
+      { path: 'new', component: () => import('@/features/qna/views/QnaFormView.vue') },
+      { path: ':qnaId', component: () => import('@/features/qna/views/QnaDetailView.vue') },
+      { path: ':qnaId/edit', component: () => import('@/features/qna/views/QnaFormView.vue') },
+    ],
+  },
+  {
     path: '/login',
     component: () => import('@/layouts/dtro-auth.vue'),
     children: [{ path: '', component: () => import('@/pages/login.vue') }],
