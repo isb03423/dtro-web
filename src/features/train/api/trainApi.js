@@ -13,22 +13,14 @@ export const fn_listTrains = filters => {
   })
 }
 
-// 열차 ID로 상세 정보를 조회한다.
-export const fn_getTrain = id => fn_apiRequest(`${BASE}/${id}`)
-
-// 입력한 열차 정보를 서버에 등록한다.
-export const fn_createTrain = payload => fn_apiRequest(BASE, {
-  method: 'POST',
-  body: JSON.stringify(payload),
-})
-
-// 열차 ID에 해당하는 정보를 수정한다.
-export const fn_updateTrain = (id, payload) => fn_apiRequest(`${BASE}/${encodeURIComponent(id)}`, {
+// 목록에서 추가하거나 수정한 열차 행을 일괄 저장한다.
+export const fn_saveTrains = rows => fn_apiRequest(BASE, {
   method: 'PUT',
-  body: JSON.stringify(payload),
+  body: JSON.stringify({ rows }),
 })
 
-// 열차 ID에 해당하는 정보를 삭제한다.
-export const fn_deleteTrain = id => fn_apiRequest(`${BASE}/${encodeURIComponent(id)}`, {
+// 목록에서 선택한 열차 ID를 일괄 삭제한다.
+export const fn_deleteTrains = ids => fn_apiRequest(BASE, {
   method: 'DELETE',
+  body: JSON.stringify(ids),
 })

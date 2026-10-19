@@ -81,21 +81,11 @@
   display: grid;
   gap: 20px;
 }
-.operation-search {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(180px, 2fr) auto auto;
-  align-items: end;
-  gap: 12px;
-}
-.operation-search label {
-  display: grid;
-  gap: 8px;
-  font-weight: 700;
-}
-.operation-search select,
 .operation-picker,
 .operation-cell-select,
-.operation-time {
+.operation-time,
+.train-cell-input,
+.train-cell-select {
   min-height: 40px;
   padding: 6px 10px;
   border: 1px solid #d7deea;
@@ -133,6 +123,15 @@
   width: 100%;
   min-width: 0;
 }
+.train-cell-input,
+.train-cell-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+.train-edit-page .train-table-wrap {
+  display: block;
+}
 .operation-actions {
   display: flex;
   gap: 8px;
@@ -143,21 +142,7 @@
 .operation-table-wrap {
   display: block;
 }
-@media (max-width: 800px) {
-  .operation-search {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .operation-search label:nth-child(3) {
-    grid-column: 1 / -1;
-  }
-}
 @media (max-width: 600px) {
-  .operation-search {
-    grid-template-columns: 1fr;
-  }
-  .operation-search label:nth-child(3) {
-    grid-column: auto;
-  }
   .operation-actions {
     width: 100%;
   }
@@ -204,19 +189,13 @@
 .incident-page .incident-table-wrap {
   display: block;
 }
-.incident-search {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(200px, 1.6fr) auto auto;
-  gap: 12px;
-  align-items: end;
-}
-.incident-search label, .incident-form label {
+.incident-form label {
   display: grid;
   min-inline-size: 0;
   gap: 8px;
   font-weight: 700;
 }
-.incident-search select, .incident-picker, .incident-form input, .incident-form textarea {
+.incident-picker, .incident-form input, .incident-form textarea {
   box-sizing: border-box;
   inline-size: 100%;
   min-inline-size: 0;
@@ -604,12 +583,6 @@
   }
 }
 @media (max-width: 900px) {
-  .incident-search {
-    grid-template-columns: 1fr 1fr;
-  }
-  .incident-search label:nth-child(3) {
-    grid-column: 1 / -1;
-  }
   .incident-detail-layout {
     grid-template-columns: 1fr;
   }
@@ -629,11 +602,8 @@
   }
 }
 @media (max-width: 600px) {
-  .incident-search, .incident-field-grid {
+  .incident-field-grid {
     grid-template-columns: 1fr;
-  }
-  .incident-search label:nth-child(3) {
-    grid-column: auto;
   }
   .incident-page .train-list__heading .incident-actions {
     flex-direction: row;
