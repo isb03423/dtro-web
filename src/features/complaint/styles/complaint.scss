@@ -1,0 +1,32 @@
+@use '@styles/train';
+
+.complaint-page .complaint-field--full {
+  grid-column: 1 / -1;
+}
+
+.complaint-page .complaint-editor-field {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.complaint-page .complaint-editor-field > span {
+  color: #263241;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.complaint-page .complaint-editor-field small {
+  color: #bc2938;
+  font-size: 13px;
+}
+
+.complaint-page .complaint-editor-view {
+  display: block;
+  min-inline-size: 0;
+}
+
+.complaint-page .complaint-answer {
+  margin-block-start: 20px;
+}
