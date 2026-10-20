@@ -1,5 +1,5 @@
 <script setup>
-import { fn_changeMemberPassword } from '@/api/memberApi'
+import { fn_changeMemberPassword } from '@/features/member/api/memberApi'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
