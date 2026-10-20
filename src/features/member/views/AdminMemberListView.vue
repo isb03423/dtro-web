@@ -1,7 +1,8 @@
 <script setup>
-import { fn_createAdminMember, fn_listAdminMembers, fn_resetAdminMemberPassword, fn_updateAdminMember } from '@/api/adminMemberApi'
+import { fn_createAdminMember, fn_listAdminMembers, fn_resetAdminMemberPassword, fn_updateAdminMember } from '@/features/member/api/adminMemberApi'
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
 import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useGridState } from '@/composables/useGridState'
 import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 import { MEMBER_ROLES } from '@/features/member/constants/memberOptions'
@@ -10,6 +11,18 @@ import { computed, onMounted, ref } from 'vue'
 
 const authStore = useAuthStore()
 const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
+
+const searchFields = [
+  { key: 'role', label: '권한', type: 'select', options: MEMBER_ROLES },
+  {
+    key: 'enabled',
+    label: '사용 상태',
+    type: 'select',
+    options: [{ value: 'true', label: '사용' }, { value: 'false', label: '중지' }],
+  },
+  { key: 'keyword', label: '검색어', type: 'search', placeholder: '아이디, 이름 또는 이메일', wide: true },
+]
+
 const fn_emptyFilters = () => ({ role: '', enabled: '', keyword: '' })
 const draftFilters = ref(fn_emptyFilters())
 const filters = ref(fn_emptyFilters())
@@ -218,26 +231,7 @@ onMounted(fn_load)
       <p>사용자를 조회하고 목록에서 계정 정보와 권한, 사용 상태를 수정합니다.</p>
     </header>
     <VCard class="train-search-card" elevation="0">
-      <form class="operation-search admin-member-search" @submit.prevent="fn_search">
-        <label>권한
-          <select v-model="draftFilters.role">
-            <option value="">전체</option>
-            <option v-for="option in MEMBER_ROLES" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </select>
-        </label>
-        <label>사용 상태
-          <select v-model="draftFilters.enabled">
-            <option value="">전체</option>
-            <option value="true">사용</option>
-            <option value="false">중지</option>
-          </select>
-        </label>
-        <label>검색어
-          <input v-model="draftFilters.keyword" type="search" placeholder="아이디, 이름 또는 이메일">
-        </label>
-        <button class="train-button train-button--primary" type="submit">검색</button>
-        <button class="train-button" type="button" @click="fn_reset">초기화</button>
-      </form>
+      <AppSearchCondition v-model="draftFilters" :fields="searchFields" @search="fn_search" @reset="fn_reset" />
     </VCard>
     <VCard class="train-list-card" elevation="0">
       <div class="train-list__heading">
