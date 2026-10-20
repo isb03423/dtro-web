@@ -1,19 +1,6 @@
 @use "@styles/variables/dtro" as dtro;
 
 // 관리자 회원 관리
-.admin-member-search input {
-  border: 1px solid #d7deea;
-  border-radius: 4px;
-  background: #fff;
-  color: #263241;
-  font: inherit;
-  inline-size: 100%;
-  min-block-size: 40px;
-  min-inline-size: 0;
-  padding-block: 6px;
-  padding-inline: 10px;
-}
-
 .admin-member-cell {
   border: 1px solid #d7deea;
   border-radius: 4px;

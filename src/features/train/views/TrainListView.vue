@@ -29,7 +29,7 @@ const {
   applyFilters,
   setGridOptions,
   reset,
-} = gfn_useListState(searchFields)
+} = gfn_useListState(searchFields, { defaultSort: 'id,desc' })
 
 const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
 const draft = ref({ ...filters.value })
@@ -131,7 +131,7 @@ const fn_reset = async () => {
 
 // 페이지·정렬 변경 전에 저장하지 않은 행이 있는지 확인한다.
 const fn_updateGridOptions = async options => {
-  const nextSort = options.sortBy[0] ? `${options.sortBy[0].key},${options.sortBy[0].order}` : 'id,asc'
+  const nextSort = options.sortBy[0] ? `${options.sortBy[0].key},${options.sortBy[0].order}` : 'id,desc'
   const nextPage = options.itemsPerPage === pageSize.value ? options.page - 1 : 0
   if (nextPage === page.value && options.itemsPerPage === pageSize.value && nextSort === sort.value) {
     return

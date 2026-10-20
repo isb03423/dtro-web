@@ -1,4 +1,4 @@
-import { fn_apiRequest } from './http'
+import { fn_apiRequest } from '@/api/http'
 
 const BASE = '/api/members'
 

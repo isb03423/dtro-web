@@ -1,5 +1,5 @@
 <script setup>
-import { fn_fetchMemberProfile, fn_updateMemberProfile } from '@/api/memberApi'
+import { fn_fetchMemberProfile, fn_updateMemberProfile } from '@/features/member/api/memberApi'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
