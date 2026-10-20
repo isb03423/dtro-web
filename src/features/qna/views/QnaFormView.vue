@@ -5,7 +5,7 @@ import CustomerServiceStationFields from '@/features/customerservice/components/
 import { useRoute, useRouter } from 'vue-router'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
-import { fn_answerQna, fn_createQna, fn_getQna, fn_updateQna } from '@/features/qna/api/qnaApi'
+import { fn_answerQna, fn_createQna, fn_getQna, fn_updateQna, fn_updateQnaAnswer } from '@/features/qna/api/qnaApi'
 import { QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_validateRequiredFields } from '@/utils/validation'
 import '../styles/qna.scss'
@@ -21,7 +21,10 @@ const replyEditor = ref(null)
 const replyError = ref('')
 const canCreate = computed(() => auth.isAuthenticated && [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
-const canAnswer = computed(() => isAdmin.value && qna.value?.status === 'PENDING')
+const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && auth.memberId != null
+  && qna.value?.createdBy != null && String(auth.memberId) === String(qna.value.createdBy) && qna.value.status === 'PENDING')
+const canAnswer = computed(() => isAdmin.value && ['PENDING', 'ANSWERED'].includes(qna.value?.status))
+const isAnswerEdit = computed(() => qna.value?.status === 'ANSWERED')
 const contentEditor = ref(null)
 const form = ref({ title: '', type: '', station: '', content: '' })
 const requiredFields = ['title', 'type', 'station', 'content']
@@ -49,6 +52,7 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) {
       qna.value = response
+      replyContent.value = response.replyContent || ''
       form.value = { title: response.title, type: response.type, station: response.station, content: response.content }
     }
   } catch (requestError) {
@@ -77,7 +81,7 @@ const fn_validate = () => {
 }
 
 const fn_save = async () => {
-  if (saving.value || loading.value || (!isEdit.value && !canCreate.value) || (isEdit.value && !qna.value)) return
+  if (saving.value || loading.value || (!isEdit.value && !canCreate.value) || (isEdit.value && !canEdit.value)) return
 
   // 에디터의 최신 HTML 내용을 검증하고 동일한 값으로 저장한다.
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
@@ -127,9 +131,15 @@ const fn_answer = async () => {
   saving.value = true
   pageError.value = ''
   try {
-    const saved = await fn_answerQna(id, { replyContent: reply })
+    const saved = isAnswerEdit.value
+      ? await fn_updateQnaAnswer(id, { replyContent: reply })
+      : await fn_answerQna(id, { replyContent: reply })
 
-    if (qna.value?.id === id) qna.value = saved
+    if (qna.value?.id === id) {
+      qna.value = saved
+      replyContent.value = saved.replyContent || ''
+      await router.push(`/qnas/${id}`)
+    }
   } catch (requestError) {
     if (qna.value?.id === id) pageError.value = requestError.message
   } finally {
@@ -141,8 +151,9 @@ const fn_answer = async () => {
 <template>
   <div class="train-page qna-page">
     <header class="train-page__intro">
-      <h2>{{ isEdit ? '질문 수정' : '질문 등록' }}</h2>
-      <p>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
+      <h2>{{ isEdit ? (isAdmin ? (isAnswerEdit ? '답변 수정' : '답변 등록') : '질문 수정') : '질문 등록' }}</h2>
+      <p v-if="isEdit && qna && !canEdit">질문 내용은 수정할 수 없습니다. 관리자는 답변만 등록·수정할 수 있습니다.</p>
+      <p v-else>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
     </header>
 
     <VCard v-if="loading" class="train-card train-card__state" elevation="0" role="status">질문 내용을 불러오는 중입니다.</VCard>
@@ -155,24 +166,24 @@ const fn_answer = async () => {
       <div class="train-field-grid train-field-grid--form">
         <label>
           <span>제목 *</span>
-          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
+          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving || (isEdit && !canEdit)" :aria-invalid="Boolean(errors.title)" />
           <small v-if="errors.title">{{ errors.title }}</small>
         </label>
         <label>
           <span>질문 유형 *</span>
-          <select v-model="form.type" :disabled="saving" :aria-invalid="Boolean(errors.type)">
+          <select v-model="form.type" :disabled="saving || (isEdit && !canEdit)" :aria-invalid="Boolean(errors.type)">
             <option value="">유형을 선택하세요</option>
             <option v-for="item in QNA_TYPES" :key="item.value" :value="item.value">{{ item.label }}</option>
           </select>
           <small v-if="errors.type">{{ errors.type }}</small>
         </label>
-        <CustomerServiceStationFields v-model="form.station" :disabled="saving" :error="errors.station" />
+        <CustomerServiceStationFields v-model="form.station" :disabled="saving || (isEdit && !canEdit)" :error="errors.station" />
         <div class="qna-field--full qna-editor-field" role="group" aria-labelledby="qna-content-label" :aria-invalid="Boolean(errors.content)">
           <span id="qna-content-label">내용 *</span>
           <DATextEditor
             ref="contentEditor"
             v-model="form.content"
-            :editable="!saving"
+            :editable="!saving && (!isEdit || canEdit)"
             :maxlength="65000"
             min-height="300px"
             placeholder="질문 내용을 입력하세요."
@@ -184,7 +195,7 @@ const fn_answer = async () => {
 
     <VCard v-if="isEdit && qna" class="train-card qna-answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
       <h2 id="qna-answer-heading">답변</h2>
-      <div v-if="qna.status === 'ANSWERED'" class="qna-editor-view">
+      <div v-if="qna.status === 'ANSWERED' && !canAnswer" class="qna-editor-view">
         <DATextEditor :model-value="qna.replyContent || ''" :editable="false" :maxlength="null" min-height="250px" />
       </div>
       <form v-else-if="canAnswer" id="qna-answer-form" novalidate @submit.prevent="fn_answer">
@@ -210,11 +221,11 @@ const fn_answer = async () => {
     <div class="train-actions">
       <RouterLink class="train-button" :to="listTo">목록</RouterLink>
       <RouterLink class="train-button" :to="cancelTo">취소</RouterLink>
-      <button v-if="isEdit || canCreate" class="train-button train-button--primary" type="submit" form="qna-form" :disabled="saving || loading || (isEdit && !qna)">
+      <button v-if="isEdit ? canEdit : canCreate" class="train-button train-button--primary" type="submit" form="qna-form" :disabled="saving || loading || (isEdit && !qna)">
         {{ saving ? '저장 중...' : '저장' }}
       </button>
       <button v-if="canAnswer && !loading" class="train-button train-button--primary" type="submit" form="qna-answer-form" :disabled="saving">
-        {{ saving ? '저장 중...' : '답변 등록' }}
+        {{ saving ? '저장 중...' : (isAnswerEdit ? '답변 수정 저장' : '답변 등록') }}
       </button>
     </div>
   </div>

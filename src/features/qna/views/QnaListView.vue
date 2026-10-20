@@ -112,12 +112,24 @@ const fn_updateGridOptions = options => {
   if (setGridOptions(options)) fn_load()
 }
 
+
+// 화면 안내와 별도로 서버에서도 동일한 접근 권한을 검사한다.
+const fn_canRead = item => auth.isAuthenticated && (auth.role === APP_ROLES.ADMIN
+  || (auth.memberId != null && item.createdBy != null && String(auth.memberId) === String(item.createdBy)))
+
+const fn_checkAccess = (event, item) => {
+  if (fn_canRead(item)) return true
+  event?.preventDefault()
+  error.value = '작성자 본인과 관리자만 상세보기를 할 수 있습니다.'
+  return false
+}
+
 const fn_detailTo = id => {
   return `/qnas/${id}`
 }
 
 const fn_openQna = (_event, { item }) => {
-  return router.push(fn_detailTo(item.id))
+  if (fn_checkAccess(_event, item)) return router.push(fn_detailTo(item.id))
 }
 
 const fn_rowProps = ({ item }) => ({
@@ -134,13 +146,14 @@ const fn_rowProps = ({ item }) => ({
     }
 
     event.preventDefault()
-    router.push(fn_detailTo(item.id))
+    if (fn_checkAccess(event, item)) router.push(fn_detailTo(item.id))
   },
 })
 </script>
 
 <template>
   <div class="train-page qna-page">
+    <p v-if="error && result.content.length" class="train-inline-error" role="alert">{{ error }}</p>
     <header class="train-page__intro">
       <h2>질문 및 답변</h2>
       <p>질문을 검색하고 접수·답변 내역을 관리합니다.</p>
@@ -178,7 +191,7 @@ const fn_rowProps = ({ item }) => ({
               @click:row="fn_openQna"
             >
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation" :to="fn_detailTo(item.id)" @click.stop>
+                <RouterLink class="train-grid__formation" :to="fn_detailTo(item.id)" @click.stop="fn_checkAccess($event, item)">
                   {{ item.title }}
                 </RouterLink>
               </template>
@@ -208,7 +221,7 @@ const fn_rowProps = ({ item }) => ({
             <p v-else-if="!result.content.length" class="train-mobile-list__state">검색 결과가 없습니다.</p>
             <ul v-else class="train-mobile-list__items">
               <li v-for="item in result.content" :key="item.id">
-                <RouterLink class="train-mobile-card" :to="fn_detailTo(item.id)">
+                <RouterLink class="train-mobile-card" :to="fn_detailTo(item.id)" @click="fn_checkAccess($event, item)">
                   <strong>{{ item.title }}</strong>
                   <dl>
                     <div>

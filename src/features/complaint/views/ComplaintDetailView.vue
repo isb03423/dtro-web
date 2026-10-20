@@ -36,7 +36,9 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) complaint.value = response
   } catch (requestError) {
-    if (requestId === latestRequestId) error.value = requestError.message
+    if (requestId === latestRequestId) error.value = requestError.status === 403
+      ? '작성자 본인과 관리자만 상세보기를 할 수 있습니다.'
+      : requestError.message
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }

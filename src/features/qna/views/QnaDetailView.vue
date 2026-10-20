@@ -1,5 +1,7 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { APP_ROLES } from '@/config/sideMenu'
 import DAReadonlyTextarea from '@/components/common/DAReadonlyTextarea.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteQna, fn_getQna } from '@/features/qna/api/qnaApi'
@@ -10,7 +12,13 @@ import '../styles/qna.scss'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const qna = ref(null)
+const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+const isOwner = computed(() => auth.memberId != null && qna.value?.createdBy != null
+  && String(auth.memberId) === String(qna.value.createdBy))
+const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && isOwner.value && qna.value?.status === 'PENDING')
+const canAnswer = computed(() => isAdmin.value && ['PENDING', 'ANSWERED'].includes(qna.value?.status))
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref('')
@@ -28,7 +36,9 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) qna.value = response
   } catch (requestError) {
-    if (requestId === latestRequestId) error.value = requestError.message
+    if (requestId === latestRequestId) error.value = requestError.status === 403
+      ? '작성자 본인과 관리자만 상세보기를 할 수 있습니다.'
+      : requestError.message
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }
@@ -120,8 +130,8 @@ const fn_remove = async () => {
       <button v-if="qna && !loading" class="train-button" type="button" :disabled="deleting" @click="fn_remove">
         {{ deleting ? '삭제 중...' : '삭제' }}
       </button>
-      <RouterLink v-if="qna && !loading && !deleting" class="train-button train-button--primary" :to="`/qnas/${qna.id}/edit`">
-        수정
+      <RouterLink v-if="(canEdit || canAnswer) && !loading && !deleting" class="train-button train-button--primary" :to="`/qnas/${qna.id}/edit`">
+        {{ canAnswer ? (qna.status === 'ANSWERED' ? '답변 수정' : '답변 등록') : '질문 수정' }}
       </RouterLink>
     </div>
   </div>
