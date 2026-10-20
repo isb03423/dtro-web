@@ -1,5 +1,5 @@
 <script setup>
-import { fn_registerMember } from '@/api/memberApi'
+import { fn_registerMember } from '@/features/member/api/memberApi'
 
 const router = useRouter()
 const form = ref({ userid: '', password: '', passwordConfirm: '', name: '', email: '', phone: '', agreement: false })

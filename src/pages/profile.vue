@@ -1,5 +1,5 @@
 <script setup>
-import { fn_fetchMemberProfile } from '@/api/memberApi'
+import { fn_fetchMemberProfile } from '@/features/member/api/memberApi'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
 
