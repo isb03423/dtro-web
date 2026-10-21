@@ -1,6 +1,9 @@
 <script setup>
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
 import { computed, ref, watch } from 'vue'
 import DATextEditor from '@/components/common/DATextEditor.vue'
+import CustomerServiceStationFields from '@/features/customerservice/components/CustomerServiceStationFields.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
@@ -8,6 +11,8 @@ import { fn_answerComplaint, fn_createComplaint, fn_getComplaint, fn_updateCompl
 import { COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
 import { gfn_validateRequiredFields } from '@/utils/validation'
 import '../styles/complaint.scss'
+
+const { dialog, finishDialog, showAccessDenied, showRequestError, showSuccess, showValidationError } = gfn_useCustomerServiceDialog()
 
 const route = useRoute()
 const router = useRouter()
@@ -19,7 +24,16 @@ const replyContent = ref('')
 const replyEditor = ref(null)
 const replyError = ref('')
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
-const canAnswer = computed(() => isAdmin.value && complaint.value?.status === 'PENDING')
+// 로그인 ID와 작성자 ID가 모두 있을 때만 본인으로 판단한다.
+const isOwner = computed(() => auth.memberId != null
+  && complaint.value?.createdBy != null
+  && String(auth.memberId) === String(complaint.value.createdBy))
+const canCreate = computed(() => !isEdit.value && auth.role === APP_ROLES.USER)
+const canEdit = computed(() => isEdit.value && auth.isAuthenticated
+  && !isAdmin.value && isOwner.value && complaint.value?.status === 'PENDING')
+const canSaveComplaint = computed(() => !loading.value && (canCreate.value || canEdit.value))
+const canAnswer = computed(() => isEdit.value && isAdmin.value
+  && !loading.value && complaint.value?.status === 'PENDING')
 const contentEditor = ref(null)
 const form = ref({ title: '', type: '', station: '', content: '' })
 const requiredFields = ['title', 'type', 'station', 'content']
@@ -40,7 +54,10 @@ const fn_load = async () => {
   replyContent.value = ''
   replyError.value = ''
   loading.value = isEdit.value
-  if (!isEdit.value) return
+  if (!isEdit.value) {
+    if (!canCreate.value) showAccessDenied('민원을 등록할 권한이 없습니다.', () => router.push(listTo))
+    return
+  }
 
   try {
     const response = await fn_getComplaint(route.params.complaintId)
@@ -50,7 +67,10 @@ const fn_load = async () => {
       form.value = { title: response.title, type: response.type, station: response.station, content: response.content }
     }
   } catch (requestError) {
-    if (requestId === latestRequestId) pageError.value = requestError.message
+    if (requestId === latestRequestId) {
+      pageError.value = requestError.message
+      showRequestError(requestError, () => router.push(listTo))
+    }
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }
@@ -75,11 +95,14 @@ const fn_validate = () => {
 }
 
 const fn_save = async () => {
-  if (saving.value || loading.value || (isEdit.value && !complaint.value)) return
+  if (saving.value || !canSaveComplaint.value) return
 
   // 에디터의 최신 HTML 내용을 검증하고 동일한 값으로 저장한다.
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
-  if (!fn_validate()) return
+  if (!fn_validate()) {
+    showValidationError('필수 입력 항목과 입력 내용을 확인해주세요.')
+    return
+  }
 
   saving.value = true
   pageError.value = ''
@@ -96,9 +119,10 @@ const fn_save = async () => {
       ? await fn_updateComplaint(route.params.complaintId, payload)
       : await fn_createComplaint(payload)
 
-    await router.push(`/complaints/${saved.id}`)
+    showSuccess('저장했습니다.', () => router.push(`/complaints/${saved.id}`))
   } catch (requestError) {
     pageError.value = requestError.message
+    showRequestError(requestError)
     for (const detail of requestError.details ?? []) {
       const [field, message] = detail.split(': ', 2)
 
@@ -118,7 +142,10 @@ const fn_answer = async () => {
 
   replyError.value = replyText.trim().length < 10 ? '답변은 10글자 이상 작성하세요.' : ''
   if (replyEditor.value?.isOverLimit) replyError.value = '답변은 65,000자 이내로 입력하세요.'
-  if (replyError.value) return
+  if (replyError.value) {
+    showValidationError(replyError.value)
+    return
+  }
 
   const id = complaint.value.id
 
@@ -127,9 +154,15 @@ const fn_answer = async () => {
   try {
     const saved = await fn_answerComplaint(id, { replyContent: reply })
 
-    if (complaint.value?.id === id) complaint.value = saved
+    if (complaint.value?.id === id) {
+      complaint.value = saved
+      showSuccess('답변을 등록했습니다.', () => router.push(`/complaints/${id}`))
+    }
   } catch (requestError) {
-    if (complaint.value?.id === id) pageError.value = requestError.message
+    if (complaint.value?.id === id) {
+      pageError.value = requestError.message
+      showRequestError(requestError)
+    }
   } finally {
     saving.value = false
   }
@@ -139,8 +172,10 @@ const fn_answer = async () => {
 <template>
   <div class="train-page complaint-page">
     <header class="train-page__intro">
-      <h2>{{ isEdit ? '민원 수정' : '민원 등록' }}</h2>
-      <p>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
+      <h2>{{ isEdit ? (isAdmin ? '민원 답변' : '민원 수정') : '민원 등록' }}</h2>
+      <p v-if="canAnswer">민원 내용은 읽기 전용입니다. 답변만 등록할 수 있습니다.</p>
+      <p v-else-if="isEdit && !canEdit && !loading">민원 내용은 읽기 전용입니다. 작성한 본인만 답변 대기 상태에서 수정할 수 있습니다.</p>
+      <p v-else>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
     </header>
 
     <VCard v-if="loading" class="train-card train-card__state" elevation="0" role="status">민원 내용을 불러오는 중입니다.</VCard>
@@ -150,30 +185,26 @@ const fn_answer = async () => {
     </VCard>
     <VCard v-else id="complaint-form" class="train-card" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
       <div class="train-field-grid train-field-grid--form">
-        <label class="complaint-field--full">
+        <label>
           <span>제목 *</span>
-          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
+          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="!canSaveComplaint || saving" :aria-invalid="Boolean(errors.title)" />
           <small v-if="errors.title">{{ errors.title }}</small>
         </label>
         <label>
           <span>민원 유형 *</span>
-          <select v-model="form.type" :disabled="saving" :aria-invalid="Boolean(errors.type)">
+          <select v-model="form.type" :disabled="!canSaveComplaint || saving" :aria-invalid="Boolean(errors.type)">
             <option value="">유형을 선택하세요</option>
             <option v-for="item in COMPLAINT_TYPES" :key="item.value" :value="item.value">{{ item.label }}</option>
           </select>
           <small v-if="errors.type">{{ errors.type }}</small>
         </label>
-        <label>
-          <span>역 이름 *</span>
-          <input v-model.trim="form.station" type="text" maxlength="30" :disabled="saving" :aria-invalid="Boolean(errors.station)" />
-          <small v-if="errors.station">{{ errors.station }}</small>
-        </label>
+        <CustomerServiceStationFields v-model="form.station" :disabled="!canSaveComplaint || saving" :error="errors.station" />
         <div class="complaint-field--full complaint-editor-field" role="group" aria-labelledby="complaint-content-label" :aria-invalid="Boolean(errors.content)">
           <span id="complaint-content-label">내용 *</span>
           <DATextEditor
             ref="contentEditor"
             v-model="form.content"
-            :editable="!saving"
+            :editable="canSaveComplaint && !saving"
             :maxlength="65000"
             min-height="300px"
             placeholder="민원 내용을 입력하세요."
@@ -204,19 +235,32 @@ const fn_answer = async () => {
           </div>
         </div>
       </form>
-      <p v-else>아직 등록된 답변이 없습니다.</p>
+      <div v-else class="complaint-editor-view">
+        <DATextEditor v-if="complaint.replyContent" :model-value="complaint.replyContent" :editable="false" :maxlength="null" min-height="250px" />
+        <p v-else>아직 등록된 답변이 없습니다.</p>
+      </div>
     </VCard>
 
     <p v-if="pageError" class="train-inline-error" role="alert">{{ pageError }}</p>
     <div class="train-actions">
       <RouterLink class="train-button" :to="listTo">목록</RouterLink>
       <RouterLink class="train-button" :to="cancelTo">취소</RouterLink>
-      <button class="train-button train-button--primary" type="submit" form="complaint-form" :disabled="saving || loading || (isEdit && !complaint)">
+      <button v-if="canSaveComplaint" class="train-button train-button--primary" type="submit" form="complaint-form" :disabled="saving">
         {{ saving ? '저장 중...' : '저장' }}
       </button>
       <button v-if="canAnswer && !loading" class="train-button train-button--primary" type="submit" form="complaint-answer-form" :disabled="saving">
         {{ saving ? '저장 중...' : '답변 등록' }}
       </button>
     </div>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>

@@ -32,3 +32,8 @@ export const fn_updateQna = (id, payload) => fn_apiRequest(`${BASE}/${encodeURIC
   method: 'PUT',
   body: JSON.stringify(payload),
 })
+
+export const fn_updateQnaAnswer = (id, payload) => fn_apiRequest(`${BASE}/${encodeURIComponent(id)}/answer`, {
+  method: 'PATCH',
+  body: JSON.stringify(payload),
+})

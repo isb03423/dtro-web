@@ -41,6 +41,7 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
     title: '고객 서비스',
     roles: [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN],
     items: [
+      { label: '고객 서비스 현황', to: '/customer-service-overview', roles: [APP_ROLES.ADMIN] },
       { label: '민원', to: '/complaints' },
       { label: '질문 및 답변', to: '/qnas' },
     ],
@@ -48,4 +49,9 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
 ])
 
 // 사용자 권한으로 표시할 메뉴 묶음을 고른다.
-export const fn_getVisibleMenuSections = role => SIDE_MENU_SECTIONS.filter(section => section.roles.includes(role))
+export const fn_getVisibleMenuSections = role => SIDE_MENU_SECTIONS
+    .filter(section => section.roles.includes(role))
+    .map(section => ({
+        ...section,
+        items: section.items.filter(item => !item.roles || item.roles.includes(role)),
+    }))

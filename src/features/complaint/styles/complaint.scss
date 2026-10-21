@@ -30,3 +30,11 @@
 .complaint-page .complaint-answer {
   margin-block-start: 20px;
 }
+
+// 내용의 테두리는 textarea 하나만 표시한다.
+.complaint-page .train-field-grid dd.complaint-editor-view {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}

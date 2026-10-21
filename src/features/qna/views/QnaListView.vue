@@ -1,4 +1,8 @@
 <script setup>
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
+import { APP_ROLES } from '@/config/sideMenu'
+import { useAuthStore } from '@/stores/auth'
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
 import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useListState } from '@/composables/useListState'
@@ -7,10 +11,15 @@ import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import '../styles/qna.scss'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
+const auth = useAuthStore()
+const canCreate = computed(() => auth.isAuthenticated && [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER].includes(auth.role))
 const router = useRouter()
+const { dialog, finishDialog, showAccessDenied, showRequestError } = gfn_useCustomerServiceDialog()
+
+const route = useRoute()
 
 const searchFields = [
   { key: 'qnaType', label: '질문 유형', type: 'select', options: QNA_TYPES },
@@ -74,6 +83,7 @@ const fn_load = async () => {
   } catch (requestError) {
     if (requestId === latestRequestId) {
       error.value = requestError.message
+      showRequestError(requestError)
       result.value = { content: [], page: 0, totalElements: 0, totalPages: 0 }
     }
   } finally {
@@ -83,7 +93,14 @@ const fn_load = async () => {
   }
 }
 
-onMounted(fn_load)
+// 현황 카드와 브라우저 뒤로 가기의 상태 조건을 목록에 반영한다.
+watch(() => route.query.qnaStatus, value => {
+  const status = QNA_STATUSES.some(item => item.value === value) ? value : ''
+
+  applyFilters({ ...filters.value, qnaStatus: status })
+  draft.value = { ...filters.value }
+  fn_load()
+}, { immediate: true })
 
 const fn_search = () => {
   applyFilters(draft.value)
@@ -100,12 +117,24 @@ const fn_updateGridOptions = options => {
   if (setGridOptions(options)) fn_load()
 }
 
+
+// 화면 안내와 별도로 서버에서도 동일한 접근 권한을 검사한다.
+const fn_canRead = item => auth.isAuthenticated && (auth.role === APP_ROLES.ADMIN
+  || (auth.memberId != null && item.createdBy != null && String(auth.memberId) === String(item.createdBy)))
+
+const fn_checkAccess = (event, item) => {
+  if (fn_canRead(item)) return true
+  event?.preventDefault()
+  showAccessDenied()
+  return false
+}
+
 const fn_detailTo = id => {
   return `/qnas/${id}`
 }
 
 const fn_openQna = (_event, { item }) => {
-  return router.push(fn_detailTo(item.id))
+  if (fn_checkAccess(_event, item)) return router.push(fn_detailTo(item.id))
 }
 
 const fn_rowProps = ({ item }) => ({
@@ -122,7 +151,7 @@ const fn_rowProps = ({ item }) => ({
     }
 
     event.preventDefault()
-    router.push(fn_detailTo(item.id))
+    if (fn_checkAccess(event, item)) router.push(fn_detailTo(item.id))
   },
 })
 </script>
@@ -147,7 +176,7 @@ const fn_rowProps = ({ item }) => ({
               <h2>목록</h2>
               <span>총 {{ result.totalElements }}건</span>
             </div>
-            <RouterLink class="train-button train-button--primary" to="/qnas/new"> 질문 등록 </RouterLink>
+            <RouterLink v-if="canCreate" class="train-button train-button--primary" to="/qnas/new"> 질문 등록 </RouterLink>
           </div>
 
           <div class="train-table-wrap">
@@ -166,7 +195,7 @@ const fn_rowProps = ({ item }) => ({
               @click:row="fn_openQna"
             >
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation" :to="fn_detailTo(item.id)" @click.stop>
+                <RouterLink class="train-grid__formation" :to="fn_detailTo(item.id)" @click.stop="fn_checkAccess($event, item)">
                   {{ item.title }}
                 </RouterLink>
               </template>
@@ -196,7 +225,7 @@ const fn_rowProps = ({ item }) => ({
             <p v-else-if="!result.content.length" class="train-mobile-list__state">검색 결과가 없습니다.</p>
             <ul v-else class="train-mobile-list__items">
               <li v-for="item in result.content" :key="item.id">
-                <RouterLink class="train-mobile-card" :to="fn_detailTo(item.id)">
+                <RouterLink class="train-mobile-card" :to="fn_detailTo(item.id)" @click="fn_checkAccess($event, item)">
                   <strong>{{ item.title }}</strong>
                   <dl>
                     <div>
@@ -246,6 +275,16 @@ const fn_rowProps = ({ item }) => ({
         </VCard>
       </VCol>
     </VRow>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>
 
