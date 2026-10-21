@@ -15,6 +15,12 @@ const fn_updateValue = (field, value) => {
   })
 }
 
+// HTML select 값은 문자열이므로 options에 정의된 원래 타입(예: boolean)으로 복원한다.
+const fn_updateSelectValue = (field, value) => {
+  const option = (field.options ?? []).find(item => String(item.value) === value)
+  fn_updateValue(field, option ? option.value : value)
+}
+
 // 부모 화면에 검색 요청을 전달한다.
 const fn_search = () => emit('search')
 
@@ -29,22 +35,47 @@ const fn_reset = () => emit('reset')
     :class="{
       'app-search-condition--two-fields': fields.length === 2,
       'app-search-condition--three-fields': fields.length === 3,
+      'app-search-condition--compact-leading': fields[0]?.compact,
     }"
     :style="{ '--field-count': fields.length }"
     @submit.prevent="fn_search"
   >
-    <label v-for="field in fields" :key="field.key" :class="{ 'app-search-condition__wide': field.wide }">
+    <label
+      v-for="field in fields"
+      :key="field.key"
+      :class="{
+        'app-search-condition__wide': field.wide,
+        'app-search-condition__compact': field.compact,
+      }"
+    >
       <span>{{ field.label }}</span>
       <select
         v-if="field.type === 'select'"
-        :value="modelValue[field.key] ?? ''"
-        @change="fn_updateValue(field, $event.target.value)"
+        :value="modelValue[field.key] == null ? '' : String(modelValue[field.key])"
+        @change="fn_updateSelectValue(field, $event.target.value)"
       >
         <option value="">{{ field.emptyLabel ?? '전체' }}</option>
         <option v-for="option in field.options ?? []" :key="option.value" :value="option.value">
           {{ option.label }}
         </option>
       </select>
+      <div v-else-if="field.type === 'search-with-select'" class="app-search-condition__search-combo">
+        <select
+          :aria-label="field.searchTypeLabel ?? `${field.label} 검색 범위`"
+          :value="modelValue[field.searchTypeKey] ?? field.defaultSearchType ?? ''"
+          @change="fn_updateSelectValue({ ...field, key: field.searchTypeKey }, $event.target.value)"
+        >
+          <option v-for="option in field.options ?? []" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <input
+          :type="field.inputType ?? 'search'"
+          :value="modelValue[field.key] ?? ''"
+          :placeholder="field.placeholder"
+          @input="fn_updateValue(field, $event.target.value)"
+        >
+      </div>
       <button
         v-else-if="field.type === 'picker'"
         class="app-search-condition__picker"
@@ -83,8 +114,13 @@ const fn_reset = () => emit('reset')
 .app-search-condition--three-fields {
   grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(200px, 1.6fr) auto auto;
 }
+.app-search-condition--compact-leading,
+.app-search-condition--two-fields.app-search-condition--compact-leading {
+  grid-template-columns: 64px minmax(0, 1fr) auto auto;
+}
 
 .app-search-condition label { display: flex; min-inline-size: 0; flex-direction: column; gap: 8px; }
+.app-search-condition label.app-search-condition__compact { inline-size: 64px; }
 .app-search-condition label > span { color: #263241; font-size: 15px; font-weight: 400; }
 .app-search-condition input,
 .app-search-condition select,
@@ -118,6 +154,31 @@ const fn_reset = () => emit('reset')
 .app-search-condition__picker .v-icon { flex: none; color: #064984; }
 .app-search-condition__placeholder { color: #738092; }
 .app-search-condition input::placeholder { color: #738092; }
+.app-search-condition label.app-search-condition__compact > select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding-inline: 2px;
+}
+.app-search-condition__search-combo {
+  display: flex;
+  min-inline-size: 0;
+  inline-size: 100%;
+  align-items: center;
+  gap: 8px;
+}
+.app-search-condition__search-combo select {
+  box-sizing: border-box;
+  inline-size: 96px;
+  min-inline-size: 96px;
+  max-inline-size: 100%;
+  flex: 0 0 96px;
+  padding: 0 2px;
+  font-size: 14px;
+}
+.app-search-condition__search-combo input {
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
 .app-search-condition__button {
   display: inline-flex;
   min-inline-size: 110px;
@@ -150,6 +211,7 @@ const fn_reset = () => emit('reset')
   .app-search-condition,
   .app-search-condition--two-fields,
   .app-search-condition--three-fields { grid-template-columns: 1fr; }
+  .app-search-condition.app-search-condition--compact-leading { grid-template-columns: 1fr; }
   .app-search-condition__wide { grid-column: auto; }
   .app-search-condition :is(input, select, .app-search-condition__picker) { block-size: 44px; font-size: 16px; }
   .app-search-condition__button { inline-size: 100%; block-size: 44px; }

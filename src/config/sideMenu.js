@@ -32,8 +32,8 @@ export const SIDE_MENU_SECTIONS = Object.freeze([
     title: '게시판',
     roles: [APP_ROLES.GUEST, APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN],
     items: [
-      { label: '공지사항', href: '#notice' },
-      { label: '자료실', href: '#resources' },
+      { label: '공지사항', to: '/notices' },
+      { label: '자료실', to: '/resources' },
     ],
   },
   {
