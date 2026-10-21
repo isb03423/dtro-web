@@ -18,11 +18,13 @@ const props = defineProps({
   modelValue: { type: String, required: true },
   placeholder: { type: String, default: '' },
   editable: { type: Boolean, default: true },
+  focusable: { type: Boolean, default: true },
   showToolbar: { type: Boolean, default: true },
   minHeight: { type: String, default: null },
   maxHeight: { type: String, default: null },
   maxlength: { type: Number, default: 65000 },
 })
+
 const emit = defineEmits(['update:modelValue'])
 const editor = ref(null)
 const lastAcceptedHtml = ref(props.modelValue)
@@ -30,6 +32,7 @@ const lastAcceptedHtml = ref(props.modelValue)
 const updateContent = html => {
   if (props.maxlength != null && gfn_getEditorTextLength(html) > props.maxlength) {
     editor.value?.setContent(lastAcceptedHtml.value)
+
     return
   }
 
@@ -40,12 +43,16 @@ const updateContent = html => {
 watch(() => props.modelValue, value => {
   lastAcceptedHtml.value = value
 })
+
 const height = computed(() => Number.parseInt(props.minHeight, 10) || 300)
+const displayOnly = computed(() => !props.editable && !props.focusable)
+
 const init = computed(() => ({
   height: height.value,
   menubar: false,
   branding: false,
   promotion: false,
+  statusbar: false,
   license_key: 'gpl',
   skin: false,
   language: 'ko_KR',
@@ -56,11 +63,13 @@ const init = computed(() => ({
   readonly: !props.editable,
   placeholder: props.placeholder,
   content_css: false,
-  content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; color: #223047; }',
-  resize: true,
+  content_style: `body { font-family: Arial, sans-serif; font-size: 14px; color: ${displayOnly.value ? '#5f6d7d' : '#223047'}; background: ${displayOnly.value ? '#f0f2f6' : '#fff'}; }`,
+  resize: false,
   min_height: height.value,
   max_height: Number.parseInt(props.maxHeight, 10) || undefined,
-  setup: instance => { editor.value = instance },
+  setup: instance => {
+    editor.value = instance
+  },
 }))
 
 defineExpose({
@@ -72,10 +81,13 @@ defineExpose({
 </script>
 
 <template>
-  <Editor
-    :model-value="modelValue"
-    :init="init"
-    :disabled="!editable"
-    @update:model-value="updateContent"
-  />
+  <div class="tiny-mce-editor" :class="{ 'tiny-mce-editor--display': displayOnly }">
+    <Editor
+      :model-value="modelValue"
+      :init="init"
+      :disabled="!editable"
+      :tabindex="displayOnly ? -1 : undefined"
+      @update:model-value="updateContent"
+    />
+  </div>
 </template>
