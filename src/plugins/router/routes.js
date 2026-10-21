@@ -114,6 +114,44 @@ export const routes = [
     ],
   },
   {
+    path: '/notices',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/notice/views/NoticeListView.vue') },
+      { path: ':id(\\d+)', component: () => import('@/features/notice/views/NoticeDetailView.vue') },
+      {
+        path: 'new',
+        component: () => import('@/features/notice/views/NoticeFormView.vue'),
+        meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'] },
+      },
+      {
+        path: ':id(\\d+)/edit',
+        component: () => import('@/features/notice/views/NoticeFormView.vue'),
+        meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'] },
+      },
+    ],
+  },
+  {
+    path: '/resources',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/resource/views/ResourceListView.vue') },
+      { path: ':resourceId(\\d+)', component: () => import('@/features/resource/views/ResourceDetailView.vue') },
+      {
+        path: 'new',
+        component: () => import('@/features/resource/views/ResourceFormView.vue'),
+        meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'] },
+      },
+      {
+        path: ':resourceId(\\d+)/edit',
+        component: () => import('@/features/resource/views/ResourceFormView.vue'),
+        meta: { requiresAuth: true, roles: ['TRAIN_MANAGER', 'ADMIN'] },
+      },
+    ],
+  },
+  {
     path: '/login',
     component: () => import('@/layouts/dtro-auth.vue'),
     children: [{ path: '', component: () => import('@/pages/login.vue') }],
