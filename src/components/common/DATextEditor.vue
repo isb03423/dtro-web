@@ -7,6 +7,7 @@ const props = defineProps({
   modelValue: { type: String, required: true },
   placeholder: { type: String, default: '' },
   editable: { type: Boolean, default: true },
+  focusable: { type: Boolean, default: true },
   showToolbar: { type: Boolean, default: true },
   minHeight: { type: String, default: null },
   maxHeight: { type: String, default: null },
@@ -34,6 +35,7 @@ defineExpose({
     :model-value="modelValue"
     :placeholder="placeholder"
     :editable="editable"
+    :focusable="focusable"
     :show-toolbar="editable && showToolbar"
     :min-height="minHeight"
     :max-height="maxHeight"

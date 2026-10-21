@@ -1,3 +1,18 @@
+// 상세 화면의 읽기 전용 에디터는 비활성화된 입력칸처럼 표시한다.
+.tiny-mce-editor--display .tox.tox-tinymce {
+  border: 1px solid #d7deea;
+  border-radius: 4px;
+  background: #f0f2f6;
+}
+
+.tiny-mce-editor--display .tox .tox-edit-area__iframe {
+  background: #f0f2f6;
+}
+
+.tiny-mce-editor--display .tox.tox-edit-focus .tox-edit-area::before {
+  opacity: 0;
+}
+
 // 공통 그리드 표시와 열 너비 조절
 .app-data-grid .v-table__wrapper table {
   min-inline-size: 900px;
