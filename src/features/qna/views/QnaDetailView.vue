@@ -1,14 +1,18 @@
 <script setup>
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
 import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { APP_ROLES } from '@/config/sideMenu'
-import DAReadonlyTextarea from '@/components/common/DAReadonlyTextarea.vue'
+import DATextEditor from '@/components/common/DATextEditor.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteQna, fn_getQna } from '@/features/qna/api/qnaApi'
 import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import '../styles/qna.scss'
+
+const { dialog, finishDialog, showRequestError, showSuccess, askConfirm } = gfn_useCustomerServiceDialog()
 
 const route = useRoute()
 const router = useRouter()
@@ -36,9 +40,10 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) qna.value = response
   } catch (requestError) {
-    if (requestId === latestRequestId) error.value = requestError.status === 403
-      ? '작성자 본인과 관리자만 상세보기를 할 수 있습니다.'
-      : requestError.message
+    if (requestId === latestRequestId) {
+      error.value = requestError.message
+      showRequestError(requestError, () => router.push(listTo))
+    }
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }
@@ -48,15 +53,16 @@ watch(() => route.params.qnaId, fn_load, { immediate: true })
 
 const fn_remove = async () => {
   if (deleting.value || !qna.value) return
-  if (!window.confirm('이 질문을 삭제하시겠습니까?')) return
-
   deleting.value = true
   error.value = ''
   try {
+    if (!(await askConfirm('계속 진행하시겠습니까?', '이 질문을 삭제하시겠습니까?', '삭제'))) return
     await fn_deleteQna(qna.value.id)
-    await router.push(listTo)
+    qna.value = null
+    showSuccess('삭제했습니다.', () => router.push(listTo))
   } catch (requestError) {
     error.value = requestError.message
+    showRequestError(requestError)
   } finally {
     deleting.value = false
   }
@@ -109,7 +115,7 @@ const fn_remove = async () => {
           <div class="qna-field--full">
             <dt>내용</dt>
             <dd class="qna-editor-view">
-              <DAReadonlyTextarea :model-value="qna.content || ''" label="질문 내용" />
+              <DATextEditor :model-value="qna.content || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
             </dd>
           </div>
         </dl>
@@ -118,7 +124,7 @@ const fn_remove = async () => {
       <VCard class="train-card qna-answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
         <h2 id="qna-answer-heading">답변</h2>
         <div v-if="qna.status === 'ANSWERED'" class="qna-editor-view">
-          <DAReadonlyTextarea :model-value="qna.replyContent || ''" label="질문 답변" />
+          <DATextEditor :model-value="qna.replyContent || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
         </div>
         <p v-else>아직 등록된 답변이 없습니다.</p>
       </VCard>
@@ -134,5 +140,15 @@ const fn_remove = async () => {
         {{ canAnswer ? (qna.status === 'ANSWERED' ? '답변 수정' : '답변 등록') : '질문 수정' }}
       </RouterLink>
     </div>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>

@@ -7,6 +7,7 @@ import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 const props = defineProps({
   modelValue: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
+  required: { type: Boolean, default: true },
   error: { type: String, default: '' },
 })
 const emit = defineEmits(['update:modelValue'])
@@ -83,7 +84,7 @@ onBeforeUnmount(() => { requestId += 1 })
 
 <template>
   <label>
-    <span>노선 *</span>
+    <span>노선<template v-if="required"> *</template></span>
     <select v-model="line" :disabled="disabled || loading" aria-label="노선" @change="fn_changeLine">
       <option value="">노선을 선택하세요</option>
       <option v-for="code in lines" :key="code" :value="code">{{ code }}호선</option>
@@ -91,7 +92,7 @@ onBeforeUnmount(() => { requestId += 1 })
     <small v-if="loadError" role="alert">{{ loadError }} <button type="button" :disabled="disabled || loading" @click="line ? fn_changeLine() : fn_load()">다시 시도</button></small>
   </label>
   <label>
-    <span>역 이름 *</span>
+    <span>역 이름<template v-if="required"> *</template></span>
     <select
       :value="modelValue"
       :disabled="disabled || loading"

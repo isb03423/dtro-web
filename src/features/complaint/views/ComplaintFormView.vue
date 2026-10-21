@@ -1,4 +1,6 @@
 <script setup>
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
 import { computed, ref, watch } from 'vue'
 import DATextEditor from '@/components/common/DATextEditor.vue'
 import CustomerServiceStationFields from '@/features/customerservice/components/CustomerServiceStationFields.vue'
@@ -9,6 +11,8 @@ import { fn_answerComplaint, fn_createComplaint, fn_getComplaint, fn_updateCompl
 import { COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
 import { gfn_validateRequiredFields } from '@/utils/validation'
 import '../styles/complaint.scss'
+
+const { dialog, finishDialog, showAccessDenied, showRequestError, showSuccess, showValidationError } = gfn_useCustomerServiceDialog()
 
 const route = useRoute()
 const router = useRouter()
@@ -50,7 +54,10 @@ const fn_load = async () => {
   replyContent.value = ''
   replyError.value = ''
   loading.value = isEdit.value
-  if (!isEdit.value) return
+  if (!isEdit.value) {
+    if (!canCreate.value) showAccessDenied('민원을 등록할 권한이 없습니다.', () => router.push(listTo))
+    return
+  }
 
   try {
     const response = await fn_getComplaint(route.params.complaintId)
@@ -60,7 +67,10 @@ const fn_load = async () => {
       form.value = { title: response.title, type: response.type, station: response.station, content: response.content }
     }
   } catch (requestError) {
-    if (requestId === latestRequestId) pageError.value = requestError.message
+    if (requestId === latestRequestId) {
+      pageError.value = requestError.message
+      showRequestError(requestError, () => router.push(listTo))
+    }
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }
@@ -89,7 +99,10 @@ const fn_save = async () => {
 
   // 에디터의 최신 HTML 내용을 검증하고 동일한 값으로 저장한다.
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
-  if (!fn_validate()) return
+  if (!fn_validate()) {
+    showValidationError('필수 입력 항목과 입력 내용을 확인해주세요.')
+    return
+  }
 
   saving.value = true
   pageError.value = ''
@@ -106,9 +119,10 @@ const fn_save = async () => {
       ? await fn_updateComplaint(route.params.complaintId, payload)
       : await fn_createComplaint(payload)
 
-    await router.push(`/complaints/${saved.id}`)
+    showSuccess('저장했습니다.', () => router.push(`/complaints/${saved.id}`))
   } catch (requestError) {
     pageError.value = requestError.message
+    showRequestError(requestError)
     for (const detail of requestError.details ?? []) {
       const [field, message] = detail.split(': ', 2)
 
@@ -128,7 +142,10 @@ const fn_answer = async () => {
 
   replyError.value = replyText.trim().length < 10 ? '답변은 10글자 이상 작성하세요.' : ''
   if (replyEditor.value?.isOverLimit) replyError.value = '답변은 65,000자 이내로 입력하세요.'
-  if (replyError.value) return
+  if (replyError.value) {
+    showValidationError(replyError.value)
+    return
+  }
 
   const id = complaint.value.id
 
@@ -137,9 +154,15 @@ const fn_answer = async () => {
   try {
     const saved = await fn_answerComplaint(id, { replyContent: reply })
 
-    if (complaint.value?.id === id) complaint.value = saved
+    if (complaint.value?.id === id) {
+      complaint.value = saved
+      showSuccess('답변을 등록했습니다.', () => router.push(`/complaints/${id}`))
+    }
   } catch (requestError) {
-    if (complaint.value?.id === id) pageError.value = requestError.message
+    if (complaint.value?.id === id) {
+      pageError.value = requestError.message
+      showRequestError(requestError)
+    }
   } finally {
     saving.value = false
   }
@@ -229,5 +252,15 @@ const fn_answer = async () => {
         {{ saving ? '저장 중...' : '답변 등록' }}
       </button>
     </div>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>

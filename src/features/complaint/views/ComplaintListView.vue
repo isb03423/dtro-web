@@ -1,4 +1,6 @@
 <script setup>
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
 import { useAuthStore } from '@/stores/auth'
 import { APP_ROLES } from '@/config/sideMenu'
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
@@ -13,6 +15,8 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const { dialog, finishDialog, showAccessDenied, showRequestError } = gfn_useCustomerServiceDialog()
+
 const route = useRoute()
 const auth = useAuthStore()
 
@@ -78,6 +82,7 @@ const fn_load = async () => {
   } catch (requestError) {
     if (requestId === latestRequestId) {
       error.value = requestError.message
+      showRequestError(requestError)
       result.value = { content: [], page: 0, totalElements: 0, totalPages: 0 }
     }
   } finally {
@@ -119,7 +124,7 @@ const fn_canRead = item => auth.isAuthenticated && (auth.role === APP_ROLES.ADMI
 const fn_checkAccess = (event, item) => {
   if (fn_canRead(item)) return true
   event?.preventDefault()
-  error.value = '작성자 본인과 관리자만 상세보기를 할 수 있습니다.'
+  showAccessDenied()
   return false
 }
 
@@ -152,7 +157,6 @@ const fn_rowProps = ({ item }) => ({
 
 <template>
   <div class="train-page complaint-page">
-    <p v-if="error && result.content.length" class="train-inline-error" role="alert">{{ error }}</p>
     <header class="train-page__intro">
       <h2>민원</h2>
       <p>민원을 검색하고 접수·답변 내역을 관리합니다.</p>
@@ -270,6 +274,16 @@ const fn_rowProps = ({ item }) => ({
         </VCard>
       </VCol>
     </VRow>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>
 
