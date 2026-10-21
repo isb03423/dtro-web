@@ -64,8 +64,9 @@ const fn_boardDestination = item => ({
   --menu-inline-padding: 24px;
 
   min-inline-size: 0;
-  min-block-size: 100%;
+  min-block-size: 0;
   align-self: stretch;
+  overflow-y: auto;
   padding: 26px 0 32px;
   border-inline-end: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: rgb(var(--v-theme-surface));
@@ -142,6 +143,7 @@ const fn_boardDestination = item => ({
   .role-side-menu--train {
     display: flex;
     overflow-x: auto;
+    overflow-y: hidden;
     min-block-size: 0;
     gap: 16px;
     border-block-end: 1px solid rgba(var(--v-theme-on-surface), 0.12);
