@@ -1,13 +1,18 @@
 <script setup>
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
 import { computed, ref, watch } from 'vue'
 import DATextEditor from '@/components/common/DATextEditor.vue'
+import CustomerServiceStationFields from '@/features/customerservice/components/CustomerServiceStationFields.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
-import { fn_answerQna, fn_createQna, fn_getQna, fn_updateQna } from '@/features/qna/api/qnaApi'
+import { fn_answerQna, fn_createQna, fn_getQna, fn_updateQna, fn_updateQnaAnswer } from '@/features/qna/api/qnaApi'
 import { QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_validateRequiredFields } from '@/utils/validation'
 import '../styles/qna.scss'
+
+const { dialog, finishDialog, showAccessDenied, showRequestError, showSuccess, showValidationError } = gfn_useCustomerServiceDialog()
 
 const route = useRoute()
 const router = useRouter()
@@ -18,11 +23,15 @@ const loading = ref(false)
 const replyContent = ref('')
 const replyEditor = ref(null)
 const replyError = ref('')
+const canCreate = computed(() => auth.isAuthenticated && [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
-const canAnswer = computed(() => isAdmin.value && qna.value?.status === 'PENDING')
+const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && auth.memberId != null
+  && qna.value?.createdBy != null && String(auth.memberId) === String(qna.value.createdBy) && qna.value.status === 'PENDING')
+const canAnswer = computed(() => isAdmin.value && ['PENDING', 'ANSWERED'].includes(qna.value?.status))
+const isAnswerEdit = computed(() => qna.value?.status === 'ANSWERED')
 const contentEditor = ref(null)
 const form = ref({ title: '', type: '', station: '', content: '' })
-const requiredFields = ['title', 'type', 'station', 'content']
+const requiredFields = ['title', 'type', 'content']
 const errors = ref({})
 const pageError = ref('')
 const saving = ref(false)
@@ -40,17 +49,24 @@ const fn_load = async () => {
   replyContent.value = ''
   replyError.value = ''
   loading.value = isEdit.value
-  if (!isEdit.value) return
+  if (!isEdit.value) {
+    if (!canCreate.value) showAccessDenied('질문을 등록할 권한이 없습니다.', () => router.push(listTo))
+    return
+  }
 
   try {
     const response = await fn_getQna(route.params.qnaId)
 
     if (requestId === latestRequestId) {
       qna.value = response
-      form.value = { title: response.title, type: response.type, station: response.station, content: response.content }
+      replyContent.value = response.replyContent || ''
+      form.value = { title: response.title, type: response.type, station: response.station || '', content: response.content }
     }
   } catch (requestError) {
-    if (requestId === latestRequestId) pageError.value = requestError.message
+    if (requestId === latestRequestId) {
+      pageError.value = requestError.message
+      showRequestError(requestError, () => router.push(listTo))
+    }
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }
@@ -75,11 +91,14 @@ const fn_validate = () => {
 }
 
 const fn_save = async () => {
-  if (saving.value || loading.value || (isEdit.value && !qna.value)) return
+  if (saving.value || loading.value || (!isEdit.value && !canCreate.value) || (isEdit.value && !canEdit.value)) return
 
   // 에디터의 최신 HTML 내용을 검증하고 동일한 값으로 저장한다.
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
-  if (!fn_validate()) return
+  if (!fn_validate()) {
+    showValidationError('필수 입력 항목과 입력 내용을 확인해주세요.')
+    return
+  }
 
   saving.value = true
   pageError.value = ''
@@ -96,9 +115,10 @@ const fn_save = async () => {
       ? await fn_updateQna(route.params.qnaId, payload)
       : await fn_createQna(payload)
 
-    await router.push(`/qnas/${saved.id}`)
+    showSuccess('저장했습니다.', () => router.push(`/qnas/${saved.id}`))
   } catch (requestError) {
     pageError.value = requestError.message
+    showRequestError(requestError)
     for (const detail of requestError.details ?? []) {
       const [field, message] = detail.split(': ', 2)
 
@@ -118,18 +138,31 @@ const fn_answer = async () => {
 
   replyError.value = replyText.trim().length < 10 ? '답변은 10글자 이상 작성하세요.' : ''
   if (replyEditor.value?.isOverLimit) replyError.value = '답변은 65,000자 이내로 입력하세요.'
-  if (replyError.value) return
+  if (replyError.value) {
+    showValidationError(replyError.value)
+    return
+  }
 
   const id = qna.value.id
+  const editingAnswer = isAnswerEdit.value
 
   saving.value = true
   pageError.value = ''
   try {
-    const saved = await fn_answerQna(id, { replyContent: reply })
+    const saved = isAnswerEdit.value
+      ? await fn_updateQnaAnswer(id, { replyContent: reply })
+      : await fn_answerQna(id, { replyContent: reply })
 
-    if (qna.value?.id === id) qna.value = saved
+    if (qna.value?.id === id) {
+      qna.value = saved
+      replyContent.value = saved.replyContent || ''
+      showSuccess(editingAnswer ? '답변을 수정했습니다.' : '답변을 등록했습니다.', () => router.push(`/qnas/${id}`))
+    }
   } catch (requestError) {
-    if (qna.value?.id === id) pageError.value = requestError.message
+    if (qna.value?.id === id) {
+      pageError.value = requestError.message
+      showRequestError(requestError)
+    }
   } finally {
     saving.value = false
   }
@@ -139,8 +172,9 @@ const fn_answer = async () => {
 <template>
   <div class="train-page qna-page">
     <header class="train-page__intro">
-      <h2>{{ isEdit ? '질문 수정' : '질문 등록' }}</h2>
-      <p>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
+      <h2>{{ isEdit ? (isAdmin ? (isAnswerEdit ? '답변 수정' : '답변 등록') : '질문 수정') : '질문 등록' }}</h2>
+      <p v-if="isEdit && qna && !canEdit">질문 내용은 수정할 수 없습니다. 관리자는 답변만 등록·수정할 수 있습니다.</p>
+      <p v-else>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
     </header>
 
     <VCard v-if="loading" class="train-card train-card__state" elevation="0" role="status">질문 내용을 불러오는 중입니다.</VCard>
@@ -148,32 +182,29 @@ const fn_answer = async () => {
       내용을 불러오지 못했습니다.
       <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
+    <VCard v-else-if="!isEdit && !canCreate" class="train-card train-card__state" elevation="0" role="alert">질문을 등록할 권한이 없습니다.</VCard>
     <VCard v-else id="qna-form" class="train-card" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
       <div class="train-field-grid train-field-grid--form">
-        <label class="qna-field--full">
+        <label>
           <span>제목 *</span>
-          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
+          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving || (isEdit && !canEdit)" :aria-invalid="Boolean(errors.title)" />
           <small v-if="errors.title">{{ errors.title }}</small>
         </label>
         <label>
           <span>질문 유형 *</span>
-          <select v-model="form.type" :disabled="saving" :aria-invalid="Boolean(errors.type)">
+          <select v-model="form.type" :disabled="saving || (isEdit && !canEdit)" :aria-invalid="Boolean(errors.type)">
             <option value="">유형을 선택하세요</option>
             <option v-for="item in QNA_TYPES" :key="item.value" :value="item.value">{{ item.label }}</option>
           </select>
           <small v-if="errors.type">{{ errors.type }}</small>
         </label>
-        <label>
-          <span>역 이름 *</span>
-          <input v-model.trim="form.station" type="text" maxlength="30" :disabled="saving" :aria-invalid="Boolean(errors.station)" />
-          <small v-if="errors.station">{{ errors.station }}</small>
-        </label>
+        <CustomerServiceStationFields v-model="form.station" :required="false" :disabled="saving || (isEdit && !canEdit)" :error="errors.station" />
         <div class="qna-field--full qna-editor-field" role="group" aria-labelledby="qna-content-label" :aria-invalid="Boolean(errors.content)">
           <span id="qna-content-label">내용 *</span>
           <DATextEditor
             ref="contentEditor"
             v-model="form.content"
-            :editable="!saving"
+            :editable="!saving && (!isEdit || canEdit)"
             :maxlength="65000"
             min-height="300px"
             placeholder="질문 내용을 입력하세요."
@@ -185,7 +216,7 @@ const fn_answer = async () => {
 
     <VCard v-if="isEdit && qna" class="train-card qna-answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
       <h2 id="qna-answer-heading">답변</h2>
-      <div v-if="qna.status === 'ANSWERED'" class="qna-editor-view">
+      <div v-if="qna.status === 'ANSWERED' && !canAnswer" class="qna-editor-view">
         <DATextEditor :model-value="qna.replyContent || ''" :editable="false" :maxlength="null" min-height="250px" />
       </div>
       <form v-else-if="canAnswer" id="qna-answer-form" novalidate @submit.prevent="fn_answer">
@@ -211,12 +242,22 @@ const fn_answer = async () => {
     <div class="train-actions">
       <RouterLink class="train-button" :to="listTo">목록</RouterLink>
       <RouterLink class="train-button" :to="cancelTo">취소</RouterLink>
-      <button class="train-button train-button--primary" type="submit" form="qna-form" :disabled="saving || loading || (isEdit && !qna)">
+      <button v-if="isEdit ? canEdit : canCreate" class="train-button train-button--primary" type="submit" form="qna-form" :disabled="saving || loading || (isEdit && !qna)">
         {{ saving ? '저장 중...' : '저장' }}
       </button>
       <button v-if="canAnswer && !loading" class="train-button train-button--primary" type="submit" form="qna-answer-form" :disabled="saving">
-        {{ saving ? '저장 중...' : '답변 등록' }}
+        {{ saving ? '저장 중...' : (isAnswerEdit ? '답변 수정 저장' : '답변 등록') }}
       </button>
     </div>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>

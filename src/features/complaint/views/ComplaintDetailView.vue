@@ -1,5 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue'
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
+import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
+import { computed, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { APP_ROLES } from '@/config/sideMenu'
 import DATextEditor from '@/components/common/DATextEditor.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteComplaint, fn_getComplaint } from '@/features/complaint/api/complaintApi'
@@ -8,13 +12,21 @@ import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import '../styles/complaint.scss'
 
+const { dialog, finishDialog, showRequestError, showSuccess, askConfirm } = gfn_useCustomerServiceDialog()
+
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const complaint = ref(null)
 const loading = ref(false)
 const deleting = ref(false)
 const error = ref('')
 const listTo = '/complaints'
+const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+const isOwner = computed(() => auth.memberId != null && complaint.value?.createdBy != null
+  && String(auth.memberId) === String(complaint.value.createdBy))
+const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && isOwner.value && complaint.value?.status === 'PENDING')
+const canAnswer = computed(() => isAdmin.value && complaint.value?.status === 'PENDING')
 let latestRequestId = 0
 
 const fn_load = async () => {
@@ -28,7 +40,10 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) complaint.value = response
   } catch (requestError) {
-    if (requestId === latestRequestId) error.value = requestError.message
+    if (requestId === latestRequestId) {
+      error.value = requestError.message
+      showRequestError(requestError, () => router.push(listTo))
+    }
   } finally {
     if (requestId === latestRequestId) loading.value = false
   }
@@ -38,15 +53,16 @@ watch(() => route.params.complaintId, fn_load, { immediate: true })
 
 const fn_remove = async () => {
   if (deleting.value || !complaint.value) return
-  if (!window.confirm('이 민원을 삭제하시겠습니까?')) return
-
   deleting.value = true
   error.value = ''
   try {
+    if (!(await askConfirm('계속 진행하시겠습니까?', '이 민원을 삭제하시겠습니까?', '삭제'))) return
     await fn_deleteComplaint(complaint.value.id)
-    await router.push(listTo)
+    complaint.value = null
+    showSuccess('삭제했습니다.', () => router.push(listTo))
   } catch (requestError) {
     error.value = requestError.message
+    showRequestError(requestError)
   } finally {
     deleting.value = false
   }
@@ -99,7 +115,7 @@ const fn_remove = async () => {
           <div class="complaint-field--full">
             <dt>내용</dt>
             <dd class="complaint-editor-view">
-              <DATextEditor :model-value="complaint.content || ''" :editable="false" :maxlength="null" min-height="250px" />
+              <DATextEditor :model-value="complaint.content || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
             </dd>
           </div>
         </dl>
@@ -108,7 +124,7 @@ const fn_remove = async () => {
       <VCard class="train-card complaint-answer" elevation="0" tag="section" aria-labelledby="complaint-answer-heading">
         <h2 id="complaint-answer-heading">답변</h2>
         <div v-if="complaint.status === 'ANSWERED'" class="complaint-editor-view">
-          <DATextEditor :model-value="complaint.replyContent || ''" :editable="false" :maxlength="null" min-height="250px" />
+          <DATextEditor :model-value="complaint.replyContent || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
         </div>
         <p v-else>아직 등록된 답변이 없습니다.</p>
       </VCard>
@@ -120,9 +136,19 @@ const fn_remove = async () => {
       <button v-if="complaint && !loading" class="train-button" type="button" :disabled="deleting" @click="fn_remove">
         {{ deleting ? '삭제 중...' : '삭제' }}
       </button>
-      <RouterLink v-if="complaint && !loading && !deleting" class="train-button train-button--primary" :to="`/complaints/${complaint.id}/edit`">
-        수정
+      <RouterLink v-if="(canEdit || canAnswer) && !loading && !deleting" class="train-button train-button--primary" :to="`/complaints/${complaint.id}/edit`">
+        {{ canAnswer ? '답변 등록' : '수정' }}
       </RouterLink>
     </div>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>

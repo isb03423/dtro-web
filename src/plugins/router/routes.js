@@ -84,12 +84,20 @@ export const routes = [
     ],
   },
   {
+    path: '/customer-service-overview',
+    component: () => import('@/layouts/dtro.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'], trainLayout: true },
+    children: [
+      { path: '', component: () => import('@/features/customerservice/views/CustomerServiceOverviewView.vue') },
+    ],
+  },
+  {
     path: '/complaints',
     component: () => import('@/layouts/dtro.vue'),
     meta: { requiresAuth: true, roles: ['USER', 'TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
     children: [
       { path: '', component: () => import('@/features/complaint/views/ComplaintListView.vue') },
-      { path: 'new', component: () => import('@/features/complaint/views/ComplaintFormView.vue') },
+      { path: 'new', component: () => import('@/features/complaint/views/ComplaintFormView.vue'), meta: { roles: ['USER'] } },
       { path: ':complaintId', component: () => import('@/features/complaint/views/ComplaintDetailView.vue') },
       { path: ':complaintId/edit', component: () => import('@/features/complaint/views/ComplaintFormView.vue') },
     ],
@@ -100,7 +108,7 @@ export const routes = [
     meta: { requiresAuth: true, roles: ['USER', 'TRAIN_MANAGER', 'ADMIN'], trainLayout: true },
     children: [
       { path: '', component: () => import('@/features/qna/views/QnaListView.vue') },
-      { path: 'new', component: () => import('@/features/qna/views/QnaFormView.vue') },
+      { path: 'new', component: () => import('@/features/qna/views/QnaFormView.vue'), meta: { roles: ['USER', 'TRAIN_MANAGER'] } },
       { path: ':qnaId', component: () => import('@/features/qna/views/QnaDetailView.vue') },
       { path: ':qnaId/edit', component: () => import('@/features/qna/views/QnaFormView.vue') },
     ],
