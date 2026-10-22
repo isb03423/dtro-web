@@ -1,0 +1,40 @@
+@use '@styles/train';
+
+.complaint-page .complaint-field--full {
+  grid-column: 1 / -1;
+}
+
+.complaint-page .complaint-editor-field {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.complaint-page .complaint-editor-field > span {
+  color: #263241;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.complaint-page .complaint-editor-field small {
+  color: #bc2938;
+  font-size: 13px;
+}
+
+.complaint-page .complaint-editor-view {
+  display: block;
+  min-inline-size: 0;
+}
+
+.complaint-page .complaint-answer {
+  margin-block-start: 20px;
+}
+
+// 내용의 테두리는 textarea 하나만 표시한다.
+.complaint-page .train-field-grid dd.complaint-editor-view {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}

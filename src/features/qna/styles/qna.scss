@@ -1,0 +1,40 @@
+@use '@styles/train';
+
+.qna-page .qna-field--full {
+  grid-column: 1 / -1;
+}
+
+.qna-page .qna-editor-field {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qna-page .qna-editor-field > span {
+  color: #263241;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.qna-page .qna-editor-field small {
+  color: #bc2938;
+  font-size: 13px;
+}
+
+.qna-page .qna-editor-view {
+  display: block;
+  min-inline-size: 0;
+}
+
+.qna-page .qna-answer {
+  margin-block-start: 20px;
+}
+
+// 내용의 테두리는 textarea 하나만 표시한다.
+.qna-page .train-field-grid dd.qna-editor-view {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}

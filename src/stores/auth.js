@@ -10,32 +10,35 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 사용자 정보에서 현재 권한을 구한다.
   const role = computed(() => account.value?.role ?? APP_ROLES.GUEST)
-  
+
   // 사용자 정보에서 로그인 아이디를 구한다.
   const username = computed(() => account.value?.userid ?? '')
-  
+
   // 사용자 정보에서 화면에 표시할 이름을 구한다.
   const displayName = computed(() => account.value?.name ?? '')
-  
+
+  // 민원 작성자 확인에 사용하는 로그인 회원 ID다.
+  const memberId = computed(() => account.value?.id ?? null)
+
   // 현재 계정의 로그인 여부를 판단한다.
   const isAuthenticated = computed(() => role.value !== APP_ROLES.GUEST)
 
   // 서버 세션을 확인해 현재 사용자를 복원한다.
-  const fn_restore = async () => {
+  const fn_restore = async (force = false) => {
     // 이미 세션을 확인했다면 같은 요청을 반복하지 않는다.
-    if (hasRestored.value) {
+    if (hasRestored.value && !force) {
       return
     }
 
     try {
       account.value = await fn_fetchCurrentUser()
-    }
-    catch {
+    } catch (error) {
+      if (error.status !== 401) {
+        throw error
+      }
       account.value = null
     }
-    finally {
-      hasRestored.value = true
-    }
+    hasRestored.value = true
   }
 
   // 로그인 결과를 사용자 상태에 반영한다.
@@ -51,13 +54,26 @@ export const useAuthStore = defineStore('auth', () => {
     hasRestored.value = true
   }
 
+  const fn_setAccount = member => {
+    account.value = member
+    hasRestored.value = true
+  }
+
+  const fn_expire = () => {
+    account.value = null
+    hasRestored.value = true
+  }
+
   return {
     role,
     username,
     displayName,
+    memberId,
     isAuthenticated,
     restore: fn_restore,
     login: fn_login,
     logout: fn_logout,
+    setAccount: fn_setAccount,
+    expire: fn_expire,
   }
 })

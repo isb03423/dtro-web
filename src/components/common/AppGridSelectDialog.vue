@@ -26,13 +26,17 @@ watch(() => props.modelValue, open => {
 
 const visibleRows = computed(() => {
   const query = keyword.value.trim().toLowerCase()
-  if (!query) return props.rows
+  if (!query) {
+    return props.rows
+  }
   
   return props.rows.filter(row => props.columns.some(column => String(row[column.key] ?? '').toLowerCase().includes(query)))
 })
 
 const toggleRow = row => {
-  if (props.disabledRow(row)) return
+  if (props.disabledRow(row)) {
+    return
+  }
 
   const key = row[props.itemKey]
 
@@ -48,12 +52,16 @@ const rowProps = ({ item }) => ({
   tabindex: props.disabledRow(item) ? -1 : 0,
   'aria-selected': selected.value.includes(item[props.itemKey]),
   onClick: event => {
-    if (event.target.closest('.v-selection-control')) return
+    if (event.target.closest('.v-selection-control')) {
+      return
+    }
 
     toggleRow(item)
   },
   onKeydown: event => {
-    if (event.target !== event.currentTarget || !['Enter', ' '].includes(event.key)) return
+    if (event.target !== event.currentTarget || !['Enter', ' '].includes(event.key)) {
+      return
+    }
 
     event.preventDefault()
     toggleRow(item)
@@ -61,14 +69,18 @@ const rowProps = ({ item }) => ({
 })
 
 const choose = row => {
-  if (props.disabledRow(row)) return
+  if (props.disabledRow(row)) {
+    return
+  }
   emit('select', row)
   emit('update:modelValue', false)
 }
 
 const confirm = () => {
   const row = props.rows.find(item => item[props.itemKey] === selected.value[0])
-  if (row) choose(row)
+  if (row) {
+    choose(row)
+  }
 }
 </script>
 

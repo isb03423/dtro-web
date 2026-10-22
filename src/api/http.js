@@ -6,6 +6,7 @@ const fn_readJson = async response => {
     const error = new Error(body?.message || '요청을 처리하지 못했습니다.')
 
     error.status = response.status
+    error.code = body?.code
     error.details = body?.errors ?? []
     throw error
   }
@@ -18,10 +19,12 @@ const fn_readJson = async response => {
 export const fn_getCsrf = async () => {
   const response = await fetch('/api/auth/csrf', { credentials: 'same-origin' })
   const csrf = await fn_readJson(response)
+
   // 서버가 쿠키에 저장한 토큰 값을 요청 헤더에 다시 넣어야 한다.
-  const cookie = document.cookie.split('; ').find(part => part.startsWith('XSRF-TOKEN='))
-  if (!cookie)
+  const cookie = document.cookie.split(';').map(part => part.trim()).find(part => part.startsWith('XSRF-TOKEN='))
+  if (!cookie) {
     throw new Error('보안 토큰을 확인하지 못했습니다. 페이지를 새로고침해 주세요.')
+  }
 
   return { ...csrf, token: decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) }
 }
@@ -30,8 +33,10 @@ export const fn_getCsrf = async () => {
 export const fn_apiRequest = async (path, options = {}) => {
   const method = options.method ?? 'GET'
   const headers = new Headers(options.headers)
-  if (options.body && !headers.has('Content-Type'))
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  if (options.body && !isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
+  }
 
   // 서버 데이터가 바뀌는 요청에만 CSRF 토큰을 붙인다.
   if (!['GET', 'HEAD'].includes(method.toUpperCase())) {
@@ -48,8 +53,9 @@ export const fn_apiRequest = async (path, options = {}) => {
   })
 
   // 204 응답에는 읽을 본문이 없다.
-  if (response.status === 204)
+  if (response.status === 204) {
     return null
+  }
   
   return fn_readJson(response)
 }

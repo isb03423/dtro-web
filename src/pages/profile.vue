@@ -1,8 +1,13 @@
 <script setup>
+import { fn_fetchMemberProfile } from '@/features/member/api/memberApi'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const router = useRouter()
+const member = ref(null)
+const loading = ref(true)
+const pageError = ref('')
 
 const roleLabels = {
   [APP_ROLES.ADMIN]: '관리자',
@@ -10,98 +15,57 @@ const roleLabels = {
   [APP_ROLES.USER]: '일반 사용자',
 }
 
-// 현재 권한을 화면에 표시할 이름으로 바꾼다.
-const roleLabel = computed(() => roleLabels[authStore.role] ?? '사용자')
+const fn_load = async () => {
+  loading.value = true
+  pageError.value = ''
+  try {
+    member.value = await fn_fetchMemberProfile()
+    authStore.setAccount(member.value)
+  } catch (error) {
+    if (error.status === 401) {
+      authStore.expire()
+      await router.replace('/login')
+
+      return
+    }
+    pageError.value = error.message
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fn_load)
 </script>
 
 <template>
-  <div class="profile-page">
-    <VCard class="profile-card" elevation="0" tag="section" aria-labelledby="profile-title">
-      <div class="profile-card__heading">
-        <span class="profile-card__avatar" aria-hidden="true"><i class="bx bx-user" /></span>
+  <div class="member-page">
+    <VCard class="member-card" elevation="0" tag="section" aria-labelledby="profile-title">
+      <div class="member-heading">
+        <span class="member-avatar" aria-hidden="true"><i class="bx bx-user" /></span>
         <div>
           <h1 id="profile-title">프로필</h1>
           <p>로그인한 계정 정보입니다.</p>
         </div>
       </div>
 
-      <dl class="profile-card__details">
-        <div>
-          <dt>아이디</dt>
-          <dd>{{ authStore.username }}</dd>
+      <p v-if="loading" class="member-status" role="status">계정 정보를 불러오는 중입니다.</p>
+      <p v-else-if="pageError" class="member-error" role="alert">{{ pageError }}</p>
+      <template v-else-if="member">
+        <p v-if="$route.query.updated === '1'" class="member-status" role="status">회원 정보가 수정되었습니다.</p>
+        <p v-if="$route.query.passwordChanged === '1'" class="member-status" role="status">비밀번호가 변경되었습니다.</p>
+        <dl class="member-details">
+          <div><dt>아이디</dt><dd>{{ member.userid }}</dd></div>
+          <div><dt>이름</dt><dd>{{ member.name }}</dd></div>
+          <div><dt>이메일</dt><dd>{{ member.email || '등록된 정보 없음' }}</dd></div>
+          <div><dt>전화번호</dt><dd>{{ member.phone || '등록된 정보 없음' }}</dd></div>
+          <div><dt>권한</dt><dd>{{ roleLabels[member.role] ?? '사용자' }}</dd></div>
+        </dl>
+        <div class="member-actions">
+          <VBtn to="/profile/edit" variant="flat">정보 수정</VBtn>
+          <VBtn to="/profile/password" variant="outlined">비밀번호 변경</VBtn>
         </div>
-        <div>
-          <dt>권한</dt>
-          <dd>{{ roleLabel }}</dd>
-        </div>
-      </dl>
+      </template>
+      <VBtn v-if="pageError" class="member-status" variant="outlined" @click="fn_load">다시 시도</VBtn>
     </VCard>
   </div>
 </template>
-
-<style lang="scss" scoped>
-@use "@styles/variables/dtro" as dtro;
-
-.profile-page {
-  inline-size: min(100%, 960px);
-  margin-inline: auto;
-  padding: clamp(20px, 3vw, 32px);
-}
-
-.profile-card {
-  @include dtro.surface-card;
-
-  padding: clamp(20px, 2vw, 24px);
-}
-
-.profile-card__heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.profile-card__avatar {
-  display: grid;
-  inline-size: 48px;
-  block-size: 48px;
-  flex: 0 0 auto;
-  border: 2px solid rgba(var(--v-theme-primary), 0.16);
-  border-radius: 50%;
-  background: rgba(var(--v-theme-primary), 0.08);
-  color: rgb(var(--v-theme-primary));
-  font-size: 24px;
-  place-items: center;
-}
-
-.profile-card h1 {
-  color: rgb(var(--v-theme-on-surface));
-  font-size: clamp(20px, 2vw, 26px);
-}
-
-.profile-card p {
-  margin-block-start: 4px;
-  color: rgba(var(--v-theme-on-surface), 0.62);
-  font-size: 15px;
-}
-
-.profile-card__details {
-  margin-block-start: 20px;
-  border-block-start: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-}
-
-.profile-card__details > div {
-  display: grid;
-  grid-template-columns: 100px minmax(0, 1fr);
-  padding-block: 12px;
-  border-block-end: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-  gap: 12px;
-}
-
-.profile-card dt { color: rgba(var(--v-theme-on-surface), 0.62); }
-.profile-card dd { min-inline-size: 0; overflow-wrap: anywhere; }
-
-@media (max-width: 640px) {
-  .profile-page { padding: 16px 14px; }
-  .profile-card__details > div { grid-template-columns: 1fr; gap: 4px; }
-}
-</style>

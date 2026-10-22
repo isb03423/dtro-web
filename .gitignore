@@ -32,8 +32,10 @@ dist-ssr
 *.sw?
 .yarn
 
-# iconify dist files
-src/plugins/iconify/icons.css
+# Vite auto-import generated files
+/auto-imports.d.ts
+/components.d.ts
+/.eslintrc-auto-import.json
 
 # Ignore MSW script
 public/mockServiceWorker.js

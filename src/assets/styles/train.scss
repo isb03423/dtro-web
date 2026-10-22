@@ -63,7 +63,7 @@
 .train-page input:focus-visible,
 .train-page select:focus-visible { outline: 3px solid #79b8f4; outline-offset: 2px; }
 
-.train-list__heading { display: flex; align-items: center; justify-content: space-between; margin: 0 0 20px; gap: 16px; }
+.train-list__heading { display: flex; min-block-size: 40px; align-items: center; justify-content: space-between; margin: 0 0 20px; gap: 16px; }
 .train-list__heading > div { display: flex; align-items: center; gap: 18px; }
 .train-list__heading h2 { margin: 0; font-size: 18px; font-weight: 800; }
 .train-list__heading span { color: #75808f; }
@@ -132,7 +132,7 @@
   .train-field-grid--form select { block-size: 48px; font-size: 16px; }
   .train-field-grid--form label span { font-size: 15px; }
   .train-button { block-size: 44px; }
-  .train-list__heading { align-items: flex-start; flex-direction: column; }
+  .train-list__heading { min-block-size: 44px; align-items: flex-start; flex-direction: column; }
   .train-list__heading > div { align-items: flex-start; flex-direction: column; gap: 4px; }
   .train-list__heading .train-button { inline-size: 100%; }
   .train-page :is(.train-search-card, .train-list-card, .train-card) { padding: 16px; }
