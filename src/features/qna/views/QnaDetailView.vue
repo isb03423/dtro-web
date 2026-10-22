@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { APP_ROLES } from '@/config/sideMenu'
 import DATextEditor from '@/components/common/DATextEditor.vue'
+import DAAnswerContent from '@/components/common/DAAnswerContent.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteQna, fn_getQna } from '@/features/qna/api/qnaApi'
 import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
@@ -19,8 +20,10 @@ const router = useRouter()
 const auth = useAuthStore()
 const qna = ref(null)
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+
 const isOwner = computed(() => auth.memberId != null && qna.value?.createdBy != null
   && String(auth.memberId) === String(qna.value.createdBy))
+
 const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && isOwner.value && qna.value?.status === 'PENDING')
 const canAnswer = computed(() => isAdmin.value && ['PENDING', 'ANSWERED'].includes(qna.value?.status))
 const loading = ref(false)
@@ -38,25 +41,33 @@ const fn_load = async () => {
   try {
     const response = await fn_getQna(route.params.qnaId)
 
-    if (requestId === latestRequestId) qna.value = response
+    if (requestId === latestRequestId) {
+      qna.value = response
+    }
   } catch (requestError) {
     if (requestId === latestRequestId) {
       error.value = requestError.message
       showRequestError(requestError, () => router.push(listTo))
     }
   } finally {
-    if (requestId === latestRequestId) loading.value = false
+    if (requestId === latestRequestId) {
+      loading.value = false
+    }
   }
 }
 
 watch(() => route.params.qnaId, fn_load, { immediate: true })
 
 const fn_remove = async () => {
-  if (deleting.value || !qna.value) return
+  if (deleting.value || !qna.value) {
+    return
+  }
   deleting.value = true
   error.value = ''
   try {
-    if (!(await askConfirm('계속 진행하시겠습니까?', '이 질문을 삭제하시겠습니까?', '삭제'))) return
+    if (!(await askConfirm('계속 진행하시겠습니까?', '이 질문을 삭제하시겠습니까?', '삭제'))) {
+      return
+    }
     await fn_deleteQna(qna.value.id)
     qna.value = null
     showSuccess('삭제했습니다.', () => router.push(listTo))
@@ -70,10 +81,10 @@ const fn_remove = async () => {
 </script>
 
 <template>
-  <div class="train-page qna-page">
+  <div class="train-page qna-page qna-detail-page">
     <header class="train-page__intro">
-      <h2 id="qna-detail-heading">질문 상세</h2>
-      <p>질문 내용과 답변·처리 상태를 확인하세요.</p>
+      <h2>질문 및 답변</h2>
+      <p>등록한 질문과 답변을 확인하세요.</p>
     </header>
 
     <VCard v-if="loading" class="train-card train-card__state" elevation="0" role="status">질문을 불러오는 중입니다.</VCard>
@@ -82,51 +93,40 @@ const fn_remove = async () => {
       <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
     <template v-else-if="qna">
-      <VCard class="train-card" elevation="0" tag="section" aria-labelledby="qna-detail-heading">
-        <dl class="train-field-grid">
-          <div class="qna-field--full">
-            <dt>제목</dt>
-            <dd>{{ qna.title }}</dd>
+      <VCard class="train-card qna-post" elevation="0" tag="article" aria-labelledby="qna-detail-heading">
+        <header class="qna-post__header">
+          <div class="qna-post__labels">
+            <span class="qna-post__type">{{ gfn_getLabel(QNA_TYPES, qna.type) }}</span>
+            <span class="qna-post__status" :class="qna.status === 'ANSWERED' ? 'qna-post__status--answered' : 'qna-post__status--pending'">
+              {{ gfn_getLabel(QNA_STATUSES, qna.status) }}
+            </span>
           </div>
-          <div>
-            <dt>질문 유형</dt>
-            <dd>{{ gfn_getLabel(QNA_TYPES, qna.type) }}</dd>
-          </div>
-          <div>
-            <dt>처리 상태</dt>
-            <dd>{{ gfn_getLabel(QNA_STATUSES, qna.status) }}</dd>
-          </div>
-          <div>
-            <dt>역 이름</dt>
-            <dd>{{ qna.station }}</dd>
-          </div>
-          <div>
-            <dt>등록자 ID</dt>
-            <dd>{{ qna.createdBy }}</dd>
-          </div>
-          <div>
-            <dt>등록일</dt>
-            <dd>{{ gfn_formatDate(qna.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
-          </div>
-          <div v-if="qna.updatedAt">
-            <dt>수정일</dt>
-            <dd>{{ gfn_formatDate(qna.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
-          </div>
-          <div class="qna-field--full">
-            <dt>내용</dt>
-            <dd class="qna-editor-view">
-              <DATextEditor :model-value="qna.content || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
-            </dd>
-          </div>
-        </dl>
-      </VCard>
+          <h2 id="qna-detail-heading" class="qna-post__title">{{ qna.title }}</h2>
+          <dl class="qna-post__meta">
+            <div v-if="qna.lineCodes?.length"><dt>노선</dt><dd>{{ qna.lineCodes.map(code => `${code}호선`).join(', ') }}</dd></div>
+            <div v-if="qna.station"><dt>역 이름</dt><dd>{{ qna.station }}</dd></div>
+            <div><dt>등록자</dt><dd>{{ qna.createdByName || '—' }}</dd></div>
+            <div><dt>등록일</dt><dd>{{ gfn_formatDate(qna.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+          </dl>
+        </header>
 
-      <VCard class="train-card qna-answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
-        <h2 id="qna-answer-heading">답변</h2>
-        <div v-if="qna.status === 'ANSWERED'" class="qna-editor-view">
-          <DATextEditor :model-value="qna.replyContent || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
-        </div>
-        <p v-else>아직 등록된 답변이 없습니다.</p>
+        <section class="qna-post__body" aria-label="질문 내용">
+          <DATextEditor :model-value="qna.content || ''" :editable="false" :focusable="false" reader-mode :maxlength="null" />
+        </section>
+
+        <section class="qna-post__answer" aria-labelledby="qna-answer-heading">
+          <div class="qna-post__answer-heading">
+            <h3 id="qna-answer-heading">답변</h3>
+          </div>
+          <template v-if="qna.status === 'ANSWERED'">
+            <dl class="qna-post__meta qna-post__answer-meta">
+              <div v-if="qna.updatedByName"><dt>답변자</dt><dd>{{ qna.updatedByName }}</dd></div>
+              <div v-if="qna.updatedAt"><dt>답변일</dt><dd>{{ gfn_formatDate(qna.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+            </dl>
+            <DAAnswerContent :model-value="qna.replyContent || ''" />
+          </template>
+          <p v-else class="qna-post__waiting">아직 등록된 답변이 없습니다.</p>
+        </section>
       </VCard>
     </template>
 

@@ -22,19 +22,24 @@ let latestRequestId = 0
 
 const fn_load = async () => {
   const requestId = ++latestRequestId
+
   loading.value = true
   error.value = ''
   notice.value = null
 
   try {
     const response = await fn_getNoticeDetail(route.params.id)
-    if (requestId === latestRequestId) notice.value = response
+    if (requestId === latestRequestId) {
+      notice.value = response
+    }
   } catch (requestError) {
     if (requestId === latestRequestId) {
       error.value = requestError.message || '공지사항을 불러오지 못했습니다.'
     }
   } finally {
-    if (requestId === latestRequestId) loading.value = false
+    if (requestId === latestRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -49,8 +54,12 @@ onMounted(async () => {
 })
 
 const fn_remove = async () => {
-  if (!isAdmin.value || deleting.value || !notice.value) return
-  if (!window.confirm('이 공지사항을 삭제하시겠습니까?')) return
+  if (!isAdmin.value || deleting.value || !notice.value) {
+    return
+  }
+  if (!window.confirm('이 공지사항을 삭제하시겠습니까?')) {
+    return
+  }
 
   deleting.value = true
   error.value = ''
@@ -66,10 +75,10 @@ const fn_remove = async () => {
 </script>
 
 <template>
-  <div class="train-page complaint-page notice-detail-page">
+  <div class="train-page notice-detail-page">
     <header class="train-page__intro">
-      <h2>공지사항 보기</h2>
-      <p>공지사항의 상세 내용을 확인합니다.</p>
+      <h2>공지사항</h2>
+      <p>공지사항의 상세 내용을 확인하세요.</p>
     </header>
 
     <VCard v-if="loading" class="train-card train-card__state" elevation="0" role="status">
@@ -78,35 +87,27 @@ const fn_remove = async () => {
     <VCard v-else-if="error" class="train-card train-card__state" elevation="0" role="alert">
       {{ error }} <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
-    <VCard v-else-if="notice" class="train-card" elevation="0" tag="section">
-      <dl class="train-field-grid">
-        <div class="notice-detail-page__full">
-          <dt>제목</dt>
-          <dd>{{ notice.title }}</dd>
+    <VCard v-else-if="notice" class="train-card board-post" elevation="0" tag="article" aria-labelledby="notice-detail-heading">
+      <header class="board-post__header">
+        <div class="board-post__badges">
+          <span class="board-post__badge" :class="notice.importantYn ? 'board-post__badge--important' : 'board-post__badge--muted'">
+            {{ notice.importantYn ? '중요' : '일반' }}
+          </span>
+          <span v-if="!isGuest" class="board-post__badge" :class="{ 'board-post__badge--muted': !notice.publicYn }">
+            {{ notice.publicYn ? '공개' : '비공개' }}
+          </span>
         </div>
-        <div>
-          <dt>번호</dt>
-          <dd>{{ notice.id }}</dd>
-        </div>
-        <div>
-          <dt>중요 여부</dt>
-          <dd>{{ notice.importantYn ? '중요' : '일반' }}</dd>
-        </div>
-        <div v-if="!isGuest">
-          <dt>공개 여부</dt>
-          <dd>{{ notice.publicYn ? '공개' : '비공개' }}</dd>
-        </div>
-        <div>
-          <dt>등록일</dt>
-          <dd>{{ gfn_formatDate(notice.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
-        </div>
-        <div class="notice-detail-page__full">
-          <dt>내용</dt>
-          <dd class="notice-detail-page__content">
-            <DATextEditor :model-value="notice.content || ''" :editable="false" :maxlength="null" min-height="250px" />
-          </dd>
-        </div>
-      </dl>
+        <h2 id="notice-detail-heading" class="board-post__title">{{ notice.title }}</h2>
+        <dl class="board-post__meta">
+          <div><dt>등록자</dt><dd>{{ notice.createdByName || '—' }}</dd></div>
+          <div><dt>등록일</dt><dd>{{ gfn_formatDate(notice.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+          <div v-if="notice.updatedByName"><dt>수정자</dt><dd>{{ notice.updatedByName }}</dd></div>
+          <div v-if="notice.updatedByName"><dt>수정일</dt><dd>{{ gfn_formatDate(notice.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+        </dl>
+      </header>
+      <section class="board-post__body" aria-label="공지 내용">
+        <DATextEditor :model-value="notice.content || ''" :editable="false" :focusable="false" reader-mode :maxlength="null" />
+      </section>
     </VCard>
 
     <div class="train-actions">
@@ -120,15 +121,3 @@ const fn_remove = async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.notice-detail-page__full { grid-column: 1 / -1; }
-.notice-detail-page__content {
-  display: block;
-  min-inline-size: 0;
-  inline-size: 100%;
-}
-.notice-detail-page__content :deep(.tox-tinymce) {
-  inline-size: 100% !important;
-}
-</style>

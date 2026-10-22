@@ -1,8 +1,6 @@
 @use '@styles/train';
-
-.complaint-page .complaint-field--full {
-  grid-column: 1 / -1;
-}
+@use '@styles/board-post';
+@use '@/features/customerservice/styles/customer-service-answer';
 
 .complaint-page .complaint-editor-field {
   display: flex;
@@ -29,12 +27,14 @@
 
 .complaint-page .complaint-answer {
   margin-block-start: 20px;
+  padding: 28px 36px;
+  border-top: 3px solid #b9d7f0;
+  border-radius: 0 0 8px 8px;
+  background: #f7faff;
 }
 
-// 내용의 테두리는 textarea 하나만 표시한다.
-.complaint-page .train-field-grid dd.complaint-editor-view {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+.complaint-page .complaint-answer > p { margin: 0; color: #75808f; }
+
+@media (max-width: 600px) {
+  .complaint-page .complaint-answer { padding: 20px 18px; }
 }

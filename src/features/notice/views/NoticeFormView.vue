@@ -19,11 +19,14 @@ let latestRequestId = 0
 
 const fn_load = async () => {
   const requestId = ++latestRequestId
+
   form.value = { title: '', content: '', importantYn: false, publicYn: true }
   errors.value = {}
   pageError.value = ''
   loading.value = isEdit.value
-  if (!isEdit.value) return
+  if (!isEdit.value) {
+    return
+  }
 
   try {
     const notice = await fn_getNoticeDetail(route.params.id)
@@ -36,9 +39,13 @@ const fn_load = async () => {
       }
     }
   } catch (requestError) {
-    if (requestId === latestRequestId) pageError.value = requestError.message
+    if (requestId === latestRequestId) {
+      pageError.value = requestError.message
+    }
   } finally {
-    if (requestId === latestRequestId) loading.value = false
+    if (requestId === latestRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -46,23 +53,34 @@ watch(() => route.params.id, fn_load, { immediate: true })
 
 const fn_validate = () => {
   const next = gfn_validateRequiredFields(form.value, ['title', 'content'])
-  if (form.value.title.trim().length > 200) next.title = '제목은 200자 이내로 입력하세요.'
+  if (form.value.title.trim().length > 200) {
+    next.title = '제목은 200자 이내로 입력하세요.'
+  }
 
   const contentText = new DOMParser().parseFromString(form.value.content, 'text/html').body.textContent || ''
-  if (!contentText.trim()) next.content = '내용을 입력하세요.'
-  if (contentEditor.value?.isOverLimit) next.content = '내용은 65,000자 이내로 입력하세요.'
+  if (!contentText.trim()) {
+    next.content = '내용을 입력하세요.'
+  }
+  if (contentEditor.value?.isOverLimit) {
+    next.content = '내용은 65,000자 이내로 입력하세요.'
+  }
   errors.value = next
 
   return Object.keys(next).length === 0
 }
 
 const fn_save = async () => {
-  if (saving.value || loading.value || (isEdit.value && !form.value.title && pageError.value)) return
+  if (saving.value || loading.value || (isEdit.value && !form.value.title && pageError.value)) {
+    return
+  }
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
-  if (!fn_validate()) return
+  if (!fn_validate()) {
+    return
+  }
 
   saving.value = true
   pageError.value = ''
+
   const payload = {
     title: form.value.title.trim(),
     content: form.value.content.trim(),
@@ -74,13 +92,17 @@ const fn_save = async () => {
     const saved = isEdit.value
       ? await fn_updateNotice(route.params.id, payload)
       : await fn_createNotice(payload)
+
     const savedId = isEdit.value ? route.params.id : (saved?.id ?? saved?.noticeId)
+
     await router.push(savedId ? `/notices/${savedId}` : '/notices')
   } catch (requestError) {
     pageError.value = requestError.message || '공지사항을 저장하지 못했습니다.'
     for (const detail of requestError.details ?? []) {
       const [field, message] = detail.split(': ', 2)
-      if (field in form.value) errors.value[field] = message
+      if (field in form.value) {
+        errors.value[field] = message
+      }
     }
   } finally {
     saving.value = false
@@ -103,21 +125,28 @@ const cancelTo = computed(() => isEdit.value ? `/notices/${route.params.id}` : '
     <VCard v-else-if="isEdit && pageError && !form.title" class="train-card train-card__state" elevation="0" role="alert">
       {{ pageError }} <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
-    <VCard v-else id="notice-form" class="train-card" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
-      <div class="train-field-grid train-field-grid--form">
-        <label class="notice-form-page__full">
+    <VCard v-else id="notice-form" class="train-card board-compose" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
+      <div class="board-compose__fields">
+        <label class="board-compose__title">
           <span>제목 *</span>
-          <input v-model.trim="form.title" type="text" maxlength="200" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
+          <input v-model.trim="form.title" type="text" maxlength="200" placeholder="제목을 입력하세요" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
           <small v-if="errors.title" role="alert">{{ errors.title }}</small>
         </label>
 
-        <div class="notice-form-page__full notice-form-page__switches">
-          <VSwitch v-model="form.importantYn" label="중요 공지" color="error" density="compact" hide-details :disabled="saving" />
-          <VSwitch v-model="form.publicYn" label="공개 여부" color="info" density="compact" hide-details :disabled="saving" />
-        </div>
-
-        <div class="notice-form-page__full notice-form-page__editor" role="group" aria-labelledby="notice-content-label" :aria-invalid="Boolean(errors.content)">
-          <span id="notice-content-label">내용 *</span>
+        <div class="board-compose__editor" role="group" aria-labelledby="notice-content-label" :aria-invalid="Boolean(errors.content)">
+          <div class="board-compose__content-heading">
+            <span id="notice-content-label">내용 *</span>
+            <div class="board-compose__flags">
+              <label class="board-compose__flag board-compose__flag--important">
+                <input v-model="form.importantYn" type="checkbox" :disabled="saving" />
+                <span>중요 공지</span>
+              </label>
+              <label class="board-compose__flag">
+                <input v-model="form.publicYn" type="checkbox" :disabled="saving" />
+                <span>공개 여부</span>
+              </label>
+            </div>
+          </div>
           <DATextEditor
             ref="contentEditor"
             v-model="form.content"
