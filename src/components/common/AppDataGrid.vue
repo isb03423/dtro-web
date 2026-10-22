@@ -30,20 +30,24 @@ defineOptions({ inheritAttrs: false })
 
 const slots = useSlots()
 const grid = ref(null)
+const wrapperWidth = ref(0)
 const columnWidths = ref({})
 const headerMenu = ref(null)
 const fonts = ref({ header: '800 13px "Malgun Gothic", sans-serif', body: '15px "Malgun Gothic", sans-serif' })
 const textMeasure = document.createElement('canvas').getContext('2d')
 let resizing = null
+let suppressResizeClick = false
+let gridResizeObserver = null
+const isResizing = ref(false)
 
-// 최대 표시 문자열과 헤더·정렬 아이콘·셀 여백을 포함한 기본 너비를 구한다.
+// 최대 표시 문자열과 헤더·셀 여백을 포함한 기본 너비를 구한다.
 const fn_defaultColumnWidth = column => {
   if (column.maxText === undefined && !column.autoWidth) {
     return column.width
   }
   textMeasure.font = fonts.value.header
 
-  const headerWidth = textMeasure.measureText(column.title).width + 32 + (column.sortable === false ? 0 : 26) + 10
+  const headerWidth = textMeasure.measureText(column.title).width + 32 + 10
 
   textMeasure.font = fonts.value.body
 
@@ -57,13 +61,29 @@ const fn_defaultColumnWidth = column => {
   return Math.ceil(Math.max(column.width || 80, headerWidth, contentWidth))
 }
 
-const gridColumns = computed(() => props.columns.map(column => ({
-  ...column,
-  width: props.columnWidthKey && Number.isFinite(columnWidths.value[column.key])
-    ? Math.max(80, columnWidths.value[column.key]) : fn_defaultColumnWidth(column)
-})))
+const gridColumns = computed(() => {
+  const columns = props.columns.map(column => {
+    const width = props.columnWidthKey && Number.isFinite(columnWidths.value[column.key])
+      ? Math.max(80, columnWidths.value[column.key]) : fn_defaultColumnWidth(column)
+
+    return {
+      ...column,
+      width,
+      ...(column.constrainWidth ? { minWidth: width, maxWidth: width } : {}),
+    }
+  })
+
+  const fillColumn = columns.find(column => column.fillRemaining)
+  if (fillColumn && !Number.isFinite(columnWidths.value[fillColumn.key])) {
+    const tableWidth = columns.reduce((sum, column) => sum + (Number(column.width) || 150), props.showSelect ? 48 : 0)
+    fillColumn.width = (Number(fillColumn.width) || 150) + Math.max(0, wrapperWidth.value - tableWidth)
+  }
+
+  return columns
+})
 
 const resizableColumns = computed(() => props.columnWidthKey ? gridColumns.value : [])
+const hasFillColumn = computed(() => props.columnWidthKey && props.columns.some(column => column.fillRemaining))
 const gridWidth = computed(() => `${gridColumns.value.reduce((sum, column) => sum + (Number(column.width) || 150), props.showSelect ? 48 : 0)}px`)
 const forwardedSlots = computed(() => Object.keys(slots).filter(name => !resizableColumns.value.some(column => name === `header.${column.key}`)))
 
@@ -84,6 +104,7 @@ const fn_stopResize = () => {
     localStorage.setItem(resizing.storageKey, JSON.stringify(columnWidths.value))
   }
   resizing = null
+  isResizing.value = false
   window.removeEventListener('pointermove', fn_moveResize)
   window.removeEventListener('pointerup', fn_stopResize)
   window.removeEventListener('pointercancel', fn_stopResize)
@@ -95,16 +116,33 @@ const fn_startResize = (event, column) => {
     return
   }
   event.preventDefault()
+  event.currentTarget.setPointerCapture(event.pointerId)
   headerMenu.value = null
+  suppressResizeClick = true
   resizing = {
     key: column.key,
     width: Number(column.width) || 150,
     startX: event.clientX,
     storageKey: props.columnWidthKey
   }
+  isResizing.value = true
   window.addEventListener('pointermove', fn_moveResize)
   window.addEventListener('pointerup', fn_stopResize)
   window.addEventListener('pointercancel', fn_stopResize)
+}
+
+// 손잡이 밖에서 놓아도 드래그 뒤에 발생한 클릭이 헤더 정렬로 전달되지 않게 한다.
+const fn_blockResizeClick = event => {
+  if (!suppressResizeClick || event.detail === 0) {
+    return
+  }
+  suppressResizeClick = false
+  event.preventDefault()
+  event.stopImmediatePropagation()
+}
+
+const fn_clearResizeClick = () => {
+  suppressResizeClick = false
 }
 
 // 방향키로 열 너비를 조절한다.
@@ -191,12 +229,25 @@ watch([() => props.loading, () => props.rows], fn_updateFonts, { flush: 'post' }
 
 onMounted(() => {
   fn_updateFonts()
+  const wrapper = grid.value?.$el.querySelector('.v-table__wrapper')
+  if (wrapper && hasFillColumn.value) {
+    wrapperWidth.value = wrapper.clientWidth
+    if (typeof ResizeObserver !== 'undefined') {
+      gridResizeObserver = new ResizeObserver(() => {
+        wrapperWidth.value = wrapper.clientWidth
+      })
+      gridResizeObserver.observe(wrapper)
+    }
+  }
+  window.addEventListener('pointerdown', fn_clearResizeClick, true)
   window.addEventListener('pointerdown', fn_closeHeaderMenu)
   window.addEventListener('keydown', fn_closeHeaderMenuOnEscape)
 })
 
 onBeforeUnmount(() => {
   fn_stopResize()
+  gridResizeObserver?.disconnect()
+  window.removeEventListener('pointerdown', fn_clearResizeClick, true)
   window.removeEventListener('pointerdown', fn_closeHeaderMenu)
   window.removeEventListener('keydown', fn_closeHeaderMenuOnEscape)
 })
@@ -207,7 +258,7 @@ onBeforeUnmount(() => {
     ref="grid"
     v-bind="$attrs"
     class="app-data-grid"
-    :class="{ 'app-data-grid--resizable': columnWidthKey }"
+    :class="{ 'app-data-grid--resizable': columnWidthKey, 'app-data-grid--fill-column': hasFillColumn, 'app-data-grid--resizing': isResizing }"
     :style="columnWidthKey ? { '--app-grid-width': gridWidth } : undefined"
     :headers="gridColumns"
     :items="rows"
@@ -230,6 +281,7 @@ onBeforeUnmount(() => {
     last-page-label="마지막 페이지"
     show-current-page
     @contextmenu="fn_openHeaderMenu"
+    @click.capture="fn_blockResizeClick"
     @update:options="options => emit('update:options', options)"
     @click:row="(event, row) => emit('click:row', event, row)"
     @update:model-value="value => emit('update:modelValue', value)"
@@ -239,7 +291,7 @@ onBeforeUnmount(() => {
     </template>
     <template v-for="column in resizableColumns" #[`header.${column.key}`]="slotProps" :key="column.key">
       <slot :name="`header.${column.key}`" v-bind="slotProps">
-        <div class="v-data-table-header__content">
+        <div class="v-data-table-header__content app-data-grid__header-content">
           <span class="app-data-grid__header-text">{{ column.title }}</span>
           <VIcon v-if="column.sortable !== false" class="v-data-table-header__sort-icon" :icon="slotProps.getSortIcon(column)" />
         </div>

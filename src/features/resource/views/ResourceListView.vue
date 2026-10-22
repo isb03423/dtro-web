@@ -2,43 +2,47 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
 import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useListState } from '@/composables/useListState'
+import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 import { APP_ROLES } from '@/config/sideMenu'
 import { fn_deleteResources, fn_listResources, fn_updateResourcesPublicYn } from '@/features/resource/api/resourceApi'
 import { useAuthStore } from '@/stores/auth'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/resource.scss'
+import '@styles/resource.scss'
 
 const router = useRouter()
 const auth = useAuthStore()
-const isGuest = computed(() => auth.role === APP_ROLES.GUEST)
 const canCreate = computed(() => [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
 const publicOptions = [
   { label: '공개', value: true },
   { label: '비공개', value: false },
 ]
 const allSearchFields = [
-  { key: 'publicYn', label: '공개여부', type: 'select', options: publicOptions, compact: true },
+  { key: 'publicYn', label: '공개여부', type: 'select', options: publicOptions },
   {
-    key: 'keyword',
-    label: '검색어',
-    type: 'search-with-select',
-    searchTypeKey: 'searchType',
-    searchTypeLabel: '검색 범위',
-    defaultSearchType: 'all',
+    key: 'searchType',
+    label: '검색 범위',
+    type: 'select',
     options: [
       { label: '제목', value: 'title' },
       { label: '내용', value: 'content' },
       { label: '제목+내용', value: 'all' },
     ],
+  },
+  {
+    key: 'keyword',
+    label: '검색어',
+    type: 'search',
     placeholder: '검색어를 입력하세요',
     wide: true,
     trim: true,
   },
 ]
-const searchFields = computed(() => isGuest.value ? allSearchFields.filter(field => field.key !== 'publicYn') : allSearchFields)
+const searchFields = computed(() => canCreate.value ? allSearchFields : allSearchFields.filter(field => field.key !== 'publicYn'))
 const {
   filters,
   page: currentPage,
@@ -48,7 +52,7 @@ const {
   applyFilters,
   setGridOptions,
   reset,
-} = gfn_useListState(allSearchFields, { defaultSort: 'resourceId,desc' })
+} = gfn_useListState(allSearchFields, { defaultSort: '' })
 const draft = ref({ publicYn: '', keyword: '', searchType: 'all' })
 const selected = ref([])
 const bulkPublicYn = ref('')
@@ -56,15 +60,13 @@ const bulkSaving = ref(false)
 const result = ref({ content: [], totalElements: 0, totalPages: 0 })
 const loading = ref(false)
 const error = ref('')
-const successMessage = ref('')
 let latestRequestId = 0
 
 const headers = computed(() => {
   const columns = [
-    { title: '번호', key: 'resourceId', width: '10%' },
-    ...(!isGuest.value ? [{ title: '공개 여부', key: 'publicYn', width: '14%' }] : []),
-    { title: '제목', key: 'title', width: '48%' },
-    { title: '등록일', key: 'createdAt', width: '20%' },
+    ...(canCreate.value ? [{ title: '공개 여부', key: 'publicYn', width: 100, constrainWidth: true }] : []),
+    { title: '제목', key: 'title', width: 520, fillRemaining: true },
+    { title: '등록일', key: 'createdAt', width: 190, constrainWidth: true },
   ]
   return columns
 })
@@ -74,18 +76,20 @@ const fn_load = async () => {
   selected.value = []
   loading.value = true
   error.value = ''
-  successMessage.value = ''
   try {
-    const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
-    const sortableKeys = ['resourceId', 'title', 'publicYn', 'createdAt']
-    const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'resourceId'
-    const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
-    const params = { page: currentPage.value, size: pageSize.value, sort: `${sortKey},${sortOrder}` }
+    const params = { page: currentPage.value, size: pageSize.value }
+    if (sort.value) {
+      const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
+      const sortableKeys = ['resourceId', 'title', 'publicYn', 'createdAt']
+      const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'resourceId'
+      const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
+      params.sort = `${sortKey},${sortOrder}`
+    }
     if (filters.value.keyword) {
       params.keyword = filters.value.keyword
       params.searchType = filters.value.searchType || 'all'
     }
-    if (typeof filters.value.publicYn === 'boolean') params.publicYn = filters.value.publicYn
+    if (canCreate.value && typeof filters.value.publicYn === 'boolean') params.publicYn = filters.value.publicYn
     const response = await fn_listResources(params)
     if (requestId === latestRequestId) result.value = response
   } catch (requestError) {
@@ -138,23 +142,35 @@ const fn_removeSelected = async () => {
 }
 
 const fn_updateSelectedPublicYn = async () => {
-  if (!isAdmin.value || !selected.value.length || bulkPublicYn.value === '' || bulkSaving.value) return
+  if (!isAdmin.value || !selected.value.length || bulkPublicYn.value === '' || bulkSaving.value) {
+    return
+  }
+
   const publicYn = bulkPublicYn.value === 'true'
   const label = publicYn ? '공개' : '비공개'
-  if (!window.confirm(`선택한 자료 ${selected.value.length}건을 ${label}로 변경하시겠습니까?`)) return
+  if (!(await askConfirm('공개 여부를 변경하시겠습니까?', `선택한 자료 ${selected.value.length}건을 ${label}로 변경하시겠습니까?`, '변경'))) {
+    return
+  }
+
   bulkSaving.value = true
   error.value = ''
+
   try {
     const ids = [...selected.value]
     const updatedCount = await fn_updateResourcesPublicYn(ids, publicYn)
     bulkPublicYn.value = ''
     await fn_load()
-    if (error.value) throw new Error(`목록을 다시 불러오지 못했습니다. ${error.value}`)
-    successMessage.value = `${typeof updatedCount === 'number' ? updatedCount : ids.length}건의 공개 여부를 ${label}로 변경했습니다.`
+    if (error.value) {
+      showMessage('warning', '변경은 완료되었습니다', `목록을 다시 불러오지 못했습니다. ${error.value}`)
+
+      return
+    }
+
+    showMessage('success', '처리가 완료되었습니다', `${typeof updatedCount === 'number' ? updatedCount : ids.length}건의 공개 여부를 ${label}로 변경했습니다.`)
   } catch (requestError) {
     const message = requestError.message || '공개 여부를 변경하지 못했습니다.'
     await fn_load()
-    error.value = message
+    showMessage('error', '오류가 발생했습니다', message)
   } finally {
     bulkSaving.value = false
   }
@@ -211,12 +227,12 @@ const fn_rowProps = ({ item }) => ({
               <RouterLink v-if="canCreate" class="train-button train-button--primary" to="/resources/new">자료 등록</RouterLink>
             </div>
           </div>
-          <p v-if="successMessage" class="resource-page__feedback resource-page__feedback--success" role="status">{{ successMessage }}</p>
           <p v-if="error" class="resource-page__feedback resource-page__feedback--error" role="alert">{{ error }}</p>
           <div class="train-table-wrap">
             <AppDataGrid
               class="train-grid"
               :columns="headers"
+              column-width-key="dtro:resource-column-widths:v4"
               :rows="result.content"
               :total-items="result.totalElements"
               :page-size="pageSize"
@@ -232,12 +248,12 @@ const fn_rowProps = ({ item }) => ({
               @click:row="fn_open"
             >
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation resource-list__title" :to="`/resources/${item.resourceId}`" @click.stop>{{ item.title }}</RouterLink>
+                <span class="resource-list__title">{{ item.title }}</span>
               </template>
               <template #item.publicYn="{ item }">
-                <v-chip :color="item.publicYn ? 'info' : 'grey'" size="x-small" label>
+                <span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">
                   {{ item.publicYn ? '공개' : '비공개' }}
-                </v-chip>
+                </span>
               </template>
               <template #item.createdAt="{ item }">{{ gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</template>
               <template #no-data>
@@ -259,8 +275,7 @@ const fn_rowProps = ({ item }) => ({
                 <RouterLink class="train-mobile-card" :to="`/resources/${item.resourceId}`">
                   <strong class="resource-list__title">{{ item.title }}</strong>
                   <dl>
-                    <div><dt>번호</dt><dd>{{ item.resourceId }}</dd></div>
-                    <div v-if="!isGuest"><dt>공개 여부</dt><dd>{{ item.publicYn ? '공개' : '비공개' }}</dd></div>
+                    <div v-if="canCreate"><dt>공개 여부</dt><dd><span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">{{ item.publicYn ? '공개' : '비공개' }}</span></dd></div>
                     <div><dt>등록일</dt><dd>{{ gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
                   </dl>
                 </RouterLink>
@@ -270,6 +285,16 @@ const fn_rowProps = ({ item }) => ({
         </VCard>
       </VCol>
     </VRow>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>
 
@@ -302,7 +327,6 @@ const fn_rowProps = ({ item }) => ({
   font-size: 14px;
 }
 
-.resource-page__feedback--success { color: #147a42; }
 .resource-page__feedback--error { color: #c62828; }
 
 .resource-list__title {
@@ -314,8 +338,4 @@ const fn_rowProps = ({ item }) => ({
   white-space: nowrap;
 }
 
-:deep(.train-grid .v-data-table__th--sorted .v-data-table-header__content) {
-  justify-content: flex-start;
-  gap: 6px;
-}
 </style>

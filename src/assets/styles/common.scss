@@ -13,6 +13,16 @@
   opacity: 0;
 }
 
+.tiny-mce-editor--reader .tox.tox-tinymce {
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+
+.tiny-mce-editor--reader .tox .tox-edit-area__iframe {
+  background: #fff;
+}
+
 // 공통 그리드 표시와 열 너비 조절
 .app-data-grid .v-table__wrapper table {
   min-inline-size: 900px;
@@ -44,11 +54,47 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.app-data-grid .app-data-grid__header-content {
+  position: relative;
+  width: 100%;
+}
+.app-data-grid .app-data-grid__header-text {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+.app-data-grid .app-data-grid__header-content .v-data-table-header__sort-icon {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 18px;
+  font-size: 18px;
+  transform: translateY(-50%);
+}
+.app-data-grid .v-data-table__th--sorted .app-data-grid__header-text,
+.app-data-grid .v-data-table__th--sortable:hover .app-data-grid__header-text,
+.app-data-grid .v-data-table__th--sortable:focus-within .app-data-grid__header-text {
+  padding-right: 20px;
+}
+.app-data-grid .v-data-table__th--sortable:not(.v-data-table__th--sorted):focus-within .v-data-table-header__sort-icon {
+  opacity: 0.5;
+}
+.app-data-grid .v-data-table__th:has(.app-data-grid__column-resize:is(:hover, :focus-visible)) .app-data-grid__header-text,
+.app-data-grid--resizing .v-data-table__th .app-data-grid__header-text {
+  padding-right: 0 !important;
+}
+.app-data-grid .v-data-table__th:has(.app-data-grid__column-resize:is(:hover, :focus-visible)) .v-data-table-header__sort-icon,
+.app-data-grid--resizing .v-data-table__th .v-data-table-header__sort-icon {
+  opacity: 0 !important;
+}
 .app-data-grid .v-data-table-footer {
   border-top: 1px solid #e6eaf0;
 }
 .app-data-grid--resizable .v-table__wrapper table {
   min-inline-size: var(--app-grid-width);
+}
+.app-data-grid.app-data-grid--fill-column .v-table__wrapper > table {
+  inline-size: var(--app-grid-width);
 }
 .app-data-grid--resizable .v-data-table__th {
   position: relative;
@@ -272,31 +318,42 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.incident-status {
+.app-status-badge {
   display: inline-flex;
+  align-items: center;
   padding: 5px 10px;
-  border-radius: 20px;
+  border-radius: 4px;
   background: #edf5ff;
   color: #1265b3;
   white-space: nowrap;
   font-size: 13px;
   font-weight: 700;
 }
-.incident-status--RECEIVED {
+.app-status-badge--RECEIVED,
+.app-status-badge--regular,
+.app-status-badge--private {
   background: #eef1f5;
   color: #536277;
 }
-.incident-status--IN_PROGRESS {
+.app-status-badge--IN_PROGRESS {
   background: #fff4dc;
   color: #885600;
 }
-.incident-status--VERIFYING {
+.app-status-badge--VERIFYING {
   background: #edf0ff;
   color: #5754a6;
 }
-.incident-status--COMPLETED {
+.app-status-badge--COMPLETED {
   background: #e6f6ee;
   color: #19734b;
+}
+.app-status-badge--important {
+  background: #fff0f1;
+  color: #a42635;
+}
+.app-status-badge--public {
+  background: #edf5ff;
+  color: #1265b3;
 }
 .incident-muted {
   color: #75808f;
@@ -643,3 +700,11 @@
 .app-status-timeline__muted { color: #75808f; font-size: 13px; }
 .app-status-timeline__error { color: #b42336; }
 .app-status-timeline__error button { color: #064984; text-decoration: underline; }
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  inline-size: 100%;
+  border: 0;
+  border-radius: 0;
+}

@@ -3,14 +3,18 @@ import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
 import { gfn_useCustomerServiceDialog } from '@/features/customerservice/composables/useCustomerServiceDialog'
 import { computed, ref, watch } from 'vue'
 import DATextEditor from '@/components/common/DATextEditor.vue'
+import DAAnswerContent from '@/components/common/DAAnswerContent.vue'
 import CustomerServiceStationFields from '@/features/customerservice/components/CustomerServiceStationFields.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
 import { fn_answerQna, fn_createQna, fn_getQna, fn_updateQna, fn_updateQnaAnswer } from '@/features/qna/api/qnaApi'
-import { QNA_TYPES } from '@/features/qna/constants/qnaOptions'
+import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
+import { gfn_getLabel } from '@/utils/common'
+import { gfn_formatDate } from '@/utils/date'
+import { gfn_getEditorPlainText } from '@/utils/editorText'
 import { gfn_validateRequiredFields } from '@/utils/validation'
-import '../styles/qna.scss'
+import '@styles/customer-service.scss'
 
 const { dialog, finishDialog, showAccessDenied, showRequestError, showSuccess, showValidationError } = gfn_useCustomerServiceDialog()
 
@@ -21,12 +25,13 @@ const isEdit = computed(() => Boolean(route.params.qnaId))
 const qna = ref(null)
 const loading = ref(false)
 const replyContent = ref('')
-const replyEditor = ref(null)
 const replyError = ref('')
 const canCreate = computed(() => auth.isAuthenticated && [APP_ROLES.USER, APP_ROLES.TRAIN_MANAGER].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+
 const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && auth.memberId != null
   && qna.value?.createdBy != null && String(auth.memberId) === String(qna.value.createdBy) && qna.value.status === 'PENDING')
+
 const canAnswer = computed(() => isAdmin.value && ['PENDING', 'ANSWERED'].includes(qna.value?.status))
 const isAnswerEdit = computed(() => qna.value?.status === 'ANSWERED')
 const contentEditor = ref(null)
@@ -50,7 +55,10 @@ const fn_load = async () => {
   replyError.value = ''
   loading.value = isEdit.value
   if (!isEdit.value) {
-    if (!canCreate.value) showAccessDenied('질문을 등록할 권한이 없습니다.', () => router.push(listTo))
+    if (!canCreate.value) {
+      showAccessDenied('질문을 등록할 권한이 없습니다.', () => router.push(listTo))
+    }
+
     return
   }
 
@@ -59,7 +67,7 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) {
       qna.value = response
-      replyContent.value = response.replyContent || ''
+      replyContent.value = gfn_getEditorPlainText(response.replyContent)
       form.value = { title: response.title, type: response.type, station: response.station || '', content: response.content }
     }
   } catch (requestError) {
@@ -68,7 +76,9 @@ const fn_load = async () => {
       showRequestError(requestError, () => router.push(listTo))
     }
   } finally {
-    if (requestId === latestRequestId) loading.value = false
+    if (requestId === latestRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -77,26 +87,40 @@ watch(() => route.params.qnaId, fn_load, { immediate: true })
 const fn_validate = () => {
   const next = gfn_validateRequiredFields(form.value, requiredFields)
 
-  if (form.value.title.trim().length > 100) next.title = '제목은 100자 이내로 입력하세요.'
-  if (form.value.station.trim().length > 30) next.station = '역 이름은 30자 이내로 입력하세요.'
-  if (!QNA_TYPES.some(item => item.value === form.value.type)) next.type = '질문 유형을 선택하세요.'
+  if (form.value.title.trim().length > 100) {
+    next.title = '제목은 100자 이내로 입력하세요.'
+  }
+  if (form.value.station.trim().length > 30) {
+    next.station = '역 이름은 30자 이내로 입력하세요.'
+  }
+  if (!QNA_TYPES.some(item => item.value === form.value.type)) {
+    next.type = '질문 유형을 선택하세요.'
+  }
+
   // HTML 태그가 아닌 실제 입력 내용을 기준으로 필수값을 검사한다.
   const contentText = new DOMParser().parseFromString(form.value.content, 'text/html').body.textContent || ''
 
-  if (!contentText.trim()) next.content = '내용을 입력하세요.'
-  if (contentEditor.value?.isOverLimit) next.content = '내용은 65,000자 이내로 입력하세요.'
+  if (!contentText.trim()) {
+    next.content = '내용을 입력하세요.'
+  }
+  if (contentEditor.value?.isOverLimit) {
+    next.content = '내용은 65,000자 이내로 입력하세요.'
+  }
   errors.value = next
 
   return Object.keys(next).length === 0
 }
 
 const fn_save = async () => {
-  if (saving.value || loading.value || (!isEdit.value && !canCreate.value) || (isEdit.value && !canEdit.value)) return
+  if (saving.value || loading.value || (!isEdit.value && !canCreate.value) || (isEdit.value && !canEdit.value)) {
+    return
+  }
 
   // 에디터의 최신 HTML 내용을 검증하고 동일한 값으로 저장한다.
   form.value.content = contentEditor.value?.getContentForSave() ?? form.value.content
   if (!fn_validate()) {
     showValidationError('필수 입력 항목과 입력 내용을 확인해주세요.')
+
     return
   }
 
@@ -122,7 +146,9 @@ const fn_save = async () => {
     for (const detail of requestError.details ?? []) {
       const [field, message] = detail.split(': ', 2)
 
-      if (field in form.value) errors.value[field] = message
+      if (field in form.value) {
+        errors.value[field] = message
+      }
     }
   } finally {
     saving.value = false
@@ -130,16 +156,19 @@ const fn_save = async () => {
 }
 
 const fn_answer = async () => {
-  if (!canAnswer.value || saving.value || loading.value) return
+  if (!canAnswer.value || saving.value || loading.value) {
+    return
+  }
 
-  // HTML 태그를 제외한 실제 답변 길이를 검증하고 에디터의 최신 HTML을 저장한다.
-  const reply = (replyEditor.value?.getContentForSave() ?? replyContent.value).trim()
-  const replyText = new DOMParser().parseFromString(reply, 'text/html').body.textContent || ''
+  const reply = replyContent.value.trim()
 
-  replyError.value = replyText.trim().length < 10 ? '답변은 10글자 이상 작성하세요.' : ''
-  if (replyEditor.value?.isOverLimit) replyError.value = '답변은 65,000자 이내로 입력하세요.'
+  replyError.value = Array.from(reply).length < 10 ? '답변은 10글자 이상 작성하세요.' : ''
+  if (Array.from(reply).length > 65000) {
+    replyError.value = '답변은 65,000자 이내로 입력하세요.'
+  }
   if (replyError.value) {
     showValidationError(replyError.value)
+
     return
   }
 
@@ -155,7 +184,7 @@ const fn_answer = async () => {
 
     if (qna.value?.id === id) {
       qna.value = saved
-      replyContent.value = saved.replyContent || ''
+      replyContent.value = gfn_getEditorPlainText(saved.replyContent)
       showSuccess(editingAnswer ? '답변을 수정했습니다.' : '답변을 등록했습니다.', () => router.push(`/qnas/${id}`))
     }
   } catch (requestError) {
@@ -170,7 +199,7 @@ const fn_answer = async () => {
 </script>
 
 <template>
-  <div class="train-page qna-page">
+  <div class="train-page qna-page qna-compose-page">
     <header class="train-page__intro">
       <h2>{{ isEdit ? (isAdmin ? (isAnswerEdit ? '답변 수정' : '답변 등록') : '질문 수정') : '질문 등록' }}</h2>
       <p v-if="isEdit && qna && !canEdit">질문 내용은 수정할 수 없습니다. 관리자는 답변만 등록·수정할 수 있습니다.</p>
@@ -183,56 +212,60 @@ const fn_answer = async () => {
       <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
     <VCard v-else-if="!isEdit && !canCreate" class="train-card train-card__state" elevation="0" role="alert">질문을 등록할 권한이 없습니다.</VCard>
-    <VCard v-else id="qna-form" class="train-card" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
-      <div class="train-field-grid train-field-grid--form">
-        <label>
-          <span>제목 *</span>
-          <input v-model.trim="form.title" type="text" maxlength="100" :disabled="saving || (isEdit && !canEdit)" :aria-invalid="Boolean(errors.title)" />
-          <small v-if="errors.title">{{ errors.title }}</small>
-        </label>
-        <label>
+    <VCard v-else-if="isEdit && !canEdit" class="train-card qna-compose__card qna-compose__preview" elevation="0" tag="article" aria-labelledby="qna-preview-heading">
+      <div class="qna-post__labels">
+        <span class="qna-post__type">{{ gfn_getLabel(QNA_TYPES, qna.type) }}</span>
+        <span class="qna-post__status" :class="qna.status === 'ANSWERED' ? 'qna-post__status--answered' : 'qna-post__status--pending'">
+          {{ gfn_getLabel(QNA_STATUSES, qna.status) }}
+        </span>
+      </div>
+      <h3 id="qna-preview-heading" class="qna-compose__preview-title">{{ qna.title }}</h3>
+      <dl class="qna-post__meta">
+        <div v-if="qna.lineCodes?.length"><dt>노선</dt><dd>{{ qna.lineCodes.map(code => `${code}호선`).join(', ') }}</dd></div>
+        <div v-if="qna.station"><dt>역 이름</dt><dd>{{ qna.station }}</dd></div>
+        <div><dt>등록자</dt><dd>{{ qna.createdByName || '—' }}</dd></div>
+        <div><dt>등록일</dt><dd>{{ gfn_formatDate(qna.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+      </dl>
+      <div class="qna-compose__preview-body">
+        <DATextEditor :model-value="qna.content || ''" :editable="false" :focusable="false" reader-mode :maxlength="null" />
+      </div>
+    </VCard>
+    <VCard v-else id="qna-form" class="train-card qna-compose__card" elevation="0" tag="form" novalidate @submit.prevent="fn_save">
+      <div class="qna-compose__fields">
+        <label class="qna-compose__type">
           <span>질문 유형 *</span>
-          <select v-model="form.type" :disabled="saving || (isEdit && !canEdit)" :aria-invalid="Boolean(errors.type)">
+          <select v-model="form.type" :disabled="saving" :aria-invalid="Boolean(errors.type)">
             <option value="">유형을 선택하세요</option>
             <option v-for="item in QNA_TYPES" :key="item.value" :value="item.value">{{ item.label }}</option>
           </select>
           <small v-if="errors.type">{{ errors.type }}</small>
         </label>
-        <CustomerServiceStationFields v-model="form.station" :required="false" :disabled="saving || (isEdit && !canEdit)" :error="errors.station" />
-        <div class="qna-field--full qna-editor-field" role="group" aria-labelledby="qna-content-label" :aria-invalid="Boolean(errors.content)">
+        <label class="qna-compose__title">
+          <span>제목 *</span>
+          <input v-model.trim="form.title" type="text" maxlength="100" placeholder="제목을 입력하세요" :disabled="saving" :aria-invalid="Boolean(errors.title)" />
+          <small v-if="errors.title">{{ errors.title }}</small>
+        </label>
+        <div class="qna-compose__station">
+          <CustomerServiceStationFields v-model="form.station" :required="false" :disabled="saving" :error="errors.station" />
+        </div>
+        <div class="qna-compose__editor qna-editor-field" role="group" aria-labelledby="qna-content-label" :aria-invalid="Boolean(errors.content)">
           <span id="qna-content-label">내용 *</span>
-          <DATextEditor
-            ref="contentEditor"
-            v-model="form.content"
-            :editable="!saving && (!isEdit || canEdit)"
-            :maxlength="65000"
-            min-height="300px"
-            placeholder="질문 내용을 입력하세요."
-          />
+          <DATextEditor ref="contentEditor" v-model="form.content" :editable="!saving" :maxlength="65000" min-height="300px" placeholder="질문 내용을 입력하세요." />
           <small v-if="errors.content" role="alert">{{ errors.content }}</small>
         </div>
       </div>
     </VCard>
 
-    <VCard v-if="isEdit && qna" class="train-card qna-answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
-      <h2 id="qna-answer-heading">답변</h2>
+    <VCard v-if="isEdit && qna" class="train-card qna-compose__answer" elevation="0" tag="section" aria-labelledby="qna-answer-heading">
+      <h2 id="qna-answer-heading">{{ canAnswer ? (isAnswerEdit ? '답변 수정' : '답변 작성') : '답변' }}</h2>
       <div v-if="qna.status === 'ANSWERED' && !canAnswer" class="qna-editor-view">
-        <DATextEditor :model-value="qna.replyContent || ''" :editable="false" :maxlength="null" min-height="250px" />
+        <DAAnswerContent :model-value="qna.replyContent || ''" />
       </div>
       <form v-else-if="canAnswer" id="qna-answer-form" novalidate @submit.prevent="fn_answer">
-        <div class="train-field-grid train-field-grid--form">
-          <div class="qna-field--full qna-editor-field" role="group" aria-labelledby="qna-reply-label" :aria-invalid="Boolean(replyError)">
-            <span id="qna-reply-label">답변 내용 * (10자 이상)</span>
-            <DATextEditor
-              ref="replyEditor"
-              v-model="replyContent"
-              :editable="!saving && !loading"
-              :maxlength="65000"
-              min-height="300px"
-              placeholder="답변 내용을 입력하세요."
-            />
-            <small v-if="replyError" role="alert">{{ replyError }}</small>
-          </div>
+        <div class="qna-editor-field" role="group" aria-labelledby="qna-reply-label" :aria-invalid="Boolean(replyError)">
+          <span id="qna-reply-label">답변 내용 * (10자 이상)</span>
+          <textarea v-model="replyContent" class="customer-service-answer-textarea" aria-labelledby="qna-reply-label" :aria-invalid="Boolean(replyError)" :disabled="saving || loading" maxlength="65000" rows="10" placeholder="답변 내용을 입력하세요." />
+          <small v-if="replyError" role="alert">{{ replyError }}</small>
         </div>
       </form>
       <p v-else>아직 등록된 답변이 없습니다.</p>

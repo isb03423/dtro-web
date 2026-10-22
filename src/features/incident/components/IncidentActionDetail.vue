@@ -328,7 +328,7 @@ onBeforeUnmount(() => {
         <VCard class="incident-detail-card" elevation="0">
           <div class="incident-detail-body">
             <h3>현재 상태</h3>
-            <span class="incident-status" :class="`incident-status--${incident.status}`">
+            <span class="app-status-badge" :class="`app-status-badge--${incident.status}`">
               {{ gfn_getLabel(INCIDENT_STATUSES, incident.status) }}
             </span>
             <ol class="incident-steps" aria-label="장애 처리 단계">

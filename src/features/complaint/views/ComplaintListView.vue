@@ -10,7 +10,7 @@ import { fn_listComplaints } from '@/features/complaint/api/complaintApi'
 import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/complaint.scss'
+import '@styles/customer-service.scss'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -42,7 +42,7 @@ const {
   applyFilters,
   setGridOptions,
   reset,
-} = gfn_useListState(searchFields, { defaultSort: 'id,desc' })
+} = gfn_useListState(searchFields, { defaultSort: '' })
 
 const draft = ref({ ...filters.value })
 const result = ref({ content: [], page: 0, totalElements: 0, totalPages: 0 })
@@ -55,12 +55,12 @@ const totalPages = computed(() =>
 )
 
 const headers = [
-  { title: '번호', key: 'id', width: '8%' },
-  { title: '제목', key: 'title', width: '30%' },
-  { title: '민원 유형', key: 'type', width: '16%' },
-  { title: '처리 상태', key: 'status', width: '12%' },
-  { title: '역 이름', key: 'station' },
-  { title: '등록일', key: 'createdAt' },
+  { title: '번호', key: 'id', width: 80, constrainWidth: true },
+  { title: '제목', key: 'title', width: 420, fillRemaining: true },
+  { title: '민원 유형', key: 'type', width: 155, constrainWidth: true },
+  { title: '처리 상태', key: 'status', width: 115, constrainWidth: true },
+  { title: '역 이름', key: 'station', width: 110, constrainWidth: true },
+  { title: '등록일', key: 'createdAt', width: 180, constrainWidth: true },
 ]
 
 const fn_load = async () => {
@@ -73,7 +73,7 @@ const fn_load = async () => {
       ...filters.value,
       page: currentPage.value,
       size: pageSize.value,
-      sort: sort.value,
+      ...(sort.value ? { sort: sort.value } : {}),
     })
 
     if (requestId === latestRequestId) {
@@ -182,6 +182,7 @@ const fn_rowProps = ({ item }) => ({
             <AppDataGrid
               class="train-grid"
               :columns="headers"
+              column-width-key="dtro:complaint-column-widths:v2"
               :rows="result.content"
               :total-items="result.totalElements"
               :page-size="pageSize"
@@ -194,9 +195,7 @@ const fn_rowProps = ({ item }) => ({
               @click:row="fn_openComplaint"
             >
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation" :to="fn_detailTo(item.id)" @click.stop="fn_checkAccess($event, item)">
-                  {{ item.title }}
-                </RouterLink>
+                {{ item.title }}
               </template>
               <template #item.createdAt="{ item }">
                 {{ gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') }}

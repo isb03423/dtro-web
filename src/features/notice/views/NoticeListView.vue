@@ -1,7 +1,9 @@
 <script setup>
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
 import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useListState } from '@/composables/useListState'
+import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 import { fn_listNotices, fn_deleteNotices, fn_updateNoticesPublicYn } from '@/features/notice/api/noticeApi'
 import { gfn_formatDate } from '@/utils/date'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -11,9 +13,9 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
-const isGuest = computed(() => auth.role === APP_ROLES.GUEST)
 const canCreate = computed(() => [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
 
 const PUBLIC_OPTIONS = [
   { label: '공개', value: true },
@@ -25,27 +27,28 @@ const allSearchFields = [
     key: 'publicYn',
     label: '공개여부',
     type: 'select',
-    compact: true,
     options: PUBLIC_OPTIONS,
   },
   {
-    key: 'keyword',
-    label: '검색어',
-    type: 'search-with-select',
-    searchTypeKey: 'searchType',
-    searchTypeLabel: '검색 범위',
-    defaultSearchType: 'all',
+    key: 'searchType',
+    label: '검색 범위',
+    type: 'select',
     options: [
       { label: '제목', value: 'title' },
       { label: '내용', value: 'content' },
       { label: '제목+내용', value: 'all' },
     ],
+  },
+  {
+    key: 'keyword',
+    label: '검색어',
+    type: 'search',
     placeholder: '제목 또는 내용 전체가 일치하는 검색어',
     wide: true,
     trim: true,
   },
 ]
-const searchFields = computed(() => isGuest.value ? allSearchFields.filter(field => field.key !== 'publicYn') : allSearchFields)
+const searchFields = computed(() => canCreate.value ? allSearchFields : allSearchFields.filter(field => field.key !== 'publicYn'))
 
 const {
   filters,
@@ -56,7 +59,7 @@ const {
   applyFilters,
   setGridOptions,
   reset,
-} = gfn_useListState(allSearchFields, { defaultSort: 'id,desc' })
+} = gfn_useListState(allSearchFields, { defaultSort: '' })
 
 const draft = ref({ publicYn: '', keyword: '', searchType: 'all' })
 const selected = ref([])
@@ -65,7 +68,6 @@ const bulkSaving = ref(false)
 const result = ref({ content: [], page: 0, totalElements: 0, totalPages: 0 })
 const loading = ref(false)
 const error = ref('')
-const successMessage = ref('')
 let latestRequestId = 0
 
 const totalPages = computed(() =>
@@ -74,11 +76,10 @@ const totalPages = computed(() =>
 
 const headers = computed(() => {
   const baseHeaders = [
-    { title: '번호', key: 'id', width: '8%' },
-    { title: '중요', key: 'importantYn', width: '10%' },
-    ...(!isGuest.value ? [{ title: '공개여부', key: 'publicYn', width: '12%' }] : []),
-    { title: '제목', key: 'title', width: '40%' },
-    { title: '등록일', key: 'createdAt', width: '20%' },
+    { title: '중요', key: 'importantYn', width: 80, constrainWidth: true },
+    ...(canCreate.value ? [{ title: '공개여부', key: 'publicYn', width: 100, constrainWidth: true }] : []),
+    { title: '제목', key: 'title', width: 480, fillRemaining: true },
+    { title: '등록일', key: 'createdAt', width: 190, constrainWidth: true },
   ]
   
   return baseHeaders
@@ -90,25 +91,26 @@ const fn_load = async () => {
 
   loading.value = true
   error.value = ''
-  successMessage.value = ''
   try {
     const queryParams = {
       page: currentPage.value,
       size: pageSize.value,
     }
-    const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
-    const sortableKeys = ['id', 'importantYn', 'publicYn', 'title', 'createdAt']
-    const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'id'
-    const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
-    // 응답/그리드에서는 id를 사용하지만 JPA 엔티티의 실제 필드는 noticeId다.
-    queryParams.sort = `${sortKey === 'id' ? 'noticeId' : sortKey},${sortOrder}`
+    if (sort.value) {
+      const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
+      const sortableKeys = ['id', 'importantYn', 'publicYn', 'title', 'createdAt']
+      const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'id'
+      const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
+      // 응답/그리드에서는 id를 사용하지만 JPA 엔티티의 실제 필드는 noticeId다.
+      queryParams.sort = `${sortKey === 'id' ? 'noticeId' : sortKey},${sortOrder}`
+    }
 
     if (filters.value.keyword) {
       queryParams.keyword = filters.value.keyword
       queryParams.searchType = filters.value.searchType || 'all'
     }
 
-    if (typeof filters.value.publicYn === 'boolean') {
+    if (canCreate.value && typeof filters.value.publicYn === 'boolean') {
       queryParams.publicYn = filters.value.publicYn
     }
 
@@ -196,24 +198,35 @@ const fn_removeSelected = async () => {
 }
 
 const fn_updateSelectedPublicYn = async () => {
-  if (!isAdmin.value || !selected.value.length || bulkPublicYn.value === '' || bulkSaving.value) return
+  if (!isAdmin.value || !selected.value.length || bulkPublicYn.value === '' || bulkSaving.value) {
+    return
+  }
+
   const publicYn = bulkPublicYn.value === 'true'
   const label = publicYn ? '공개' : '비공개'
-  if (!window.confirm(`선택한 공지사항 ${selected.value.length}건을 ${label}로 변경하시겠습니까?`)) return
+  if (!(await askConfirm('공개 여부를 변경하시겠습니까?', `선택한 공지사항 ${selected.value.length}건을 ${label}로 변경하시겠습니까?`, '변경'))) {
+    return
+  }
 
   bulkSaving.value = true
   error.value = ''
+
   try {
     const ids = [...selected.value]
     const updatedCount = await fn_updateNoticesPublicYn(ids, publicYn)
     bulkPublicYn.value = ''
     await fn_load()
-    if (error.value) throw new Error(`목록을 다시 불러오지 못했습니다. ${error.value}`)
-    successMessage.value = `${typeof updatedCount === 'number' ? updatedCount : ids.length}건의 공개 여부를 ${label}로 변경했습니다.`
+    if (error.value) {
+      showMessage('warning', '변경은 완료되었습니다', `목록을 다시 불러오지 못했습니다. ${error.value}`)
+
+      return
+    }
+
+    showMessage('success', '처리가 완료되었습니다', `${typeof updatedCount === 'number' ? updatedCount : ids.length}건의 공개 여부를 ${label}로 변경했습니다.`)
   } catch (requestError) {
     const message = requestError.message || '공개 여부를 변경하지 못했습니다.'
     await fn_load()
-    error.value = message
+    showMessage('error', '오류가 발생했습니다', message)
   } finally {
     bulkSaving.value = false
   }
@@ -280,13 +293,13 @@ const fn_rowProps = ({ item }) => {
             </div>
           </div>
 
-          <p v-if="successMessage" class="notice-list__feedback notice-list__feedback--success" role="status">{{ successMessage }}</p>
           <p v-if="error" class="notice-list__feedback notice-list__feedback--error" role="alert">{{ error }}</p>
 
           <div class="train-table-wrap">
             <AppDataGrid
               class="train-grid"
               :columns="headers"
+              column-width-key="dtro:notice-column-widths:v4"
               :rows="result.content"
               :total-items="result.totalElements"
               :page-size="pageSize"
@@ -302,21 +315,19 @@ const fn_rowProps = ({ item }) => {
               @click:row="fn_openNotice"
             >
               <template #item.importantYn="{ item }">
-                <v-chip :color="item.importantYn ? 'error' : 'default'" size="x-small" label>
+                <span class="app-status-badge" :class="item.importantYn ? 'app-status-badge--important' : 'app-status-badge--regular'">
                   {{ item.importantYn ? '중요' : '일반' }}
-                </v-chip>
+                </span>
               </template>
 
               <template #item.publicYn="{ item }">
-                <v-chip :color="item.publicYn ? 'info' : 'grey'" size="x-small" label>
+                <span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">
                   {{ item.publicYn ? '공개' : '비공개' }}
-                </v-chip>
+                </span>
               </template>
 
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation notice-list__title" :to="fn_detailTo(item.id || item.noticeId)" @click.stop>
-                  {{ item.title }}
-                </RouterLink>
+                <span class="notice-list__title">{{ item.title }}</span>
               </template>
 
               <template #item.createdAt="{ item }">
@@ -348,16 +359,12 @@ const fn_rowProps = ({ item }) => {
                   <strong class="notice-list__title">{{ item.title }}</strong>
                   <dl>
                     <div>
-                      <dt>번호</dt>
-                      <dd>{{ item.id || item.noticeId }}</dd>
-                    </div>
-                    <div>
                       <dt>중요여부</dt>
-                      <dd>{{ item.importantYn ? '중요' : '일반' }}</dd>
+                      <dd><span class="app-status-badge" :class="item.importantYn ? 'app-status-badge--important' : 'app-status-badge--regular'">{{ item.importantYn ? '중요' : '일반' }}</span></dd>
                     </div>
-                    <div v-if="!isGuest">
+                    <div v-if="canCreate">
                       <dt>공개여부</dt>
-                      <dd>{{ item.publicYn ? '공개' : '비공개' }}</dd>
+                      <dd><span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">{{ item.publicYn ? '공개' : '비공개' }}</span></dd>
                     </div>
                   </dl>
                 </RouterLink>
@@ -367,6 +374,16 @@ const fn_rowProps = ({ item }) => {
         </VCard>
       </VCol>
     </VRow>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>
 
@@ -399,7 +416,6 @@ const fn_rowProps = ({ item }) => {
   font-size: 14px;
 }
 
-.notice-list__feedback--success { color: #147a42; }
 .notice-list__feedback--error { color: #c62828; }
 
 .notice-list__title {

@@ -5,12 +5,13 @@ import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { APP_ROLES } from '@/config/sideMenu'
 import DATextEditor from '@/components/common/DATextEditor.vue'
+import DAAnswerContent from '@/components/common/DAAnswerContent.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fn_deleteComplaint, fn_getComplaint } from '@/features/complaint/api/complaintApi'
 import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/complaint.scss'
+import '@styles/customer-service.scss'
 
 const { dialog, finishDialog, showRequestError, showSuccess, askConfirm } = gfn_useCustomerServiceDialog()
 
@@ -23,8 +24,10 @@ const deleting = ref(false)
 const error = ref('')
 const listTo = '/complaints'
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+
 const isOwner = computed(() => auth.memberId != null && complaint.value?.createdBy != null
   && String(auth.memberId) === String(complaint.value.createdBy))
+
 const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && isOwner.value && complaint.value?.status === 'PENDING')
 const canAnswer = computed(() => isAdmin.value && complaint.value?.status === 'PENDING')
 let latestRequestId = 0
@@ -38,25 +41,33 @@ const fn_load = async () => {
   try {
     const response = await fn_getComplaint(route.params.complaintId)
 
-    if (requestId === latestRequestId) complaint.value = response
+    if (requestId === latestRequestId) {
+      complaint.value = response
+    }
   } catch (requestError) {
     if (requestId === latestRequestId) {
       error.value = requestError.message
       showRequestError(requestError, () => router.push(listTo))
     }
   } finally {
-    if (requestId === latestRequestId) loading.value = false
+    if (requestId === latestRequestId) {
+      loading.value = false
+    }
   }
 }
 
 watch(() => route.params.complaintId, fn_load, { immediate: true })
 
 const fn_remove = async () => {
-  if (deleting.value || !complaint.value) return
+  if (deleting.value || !complaint.value) {
+    return
+  }
   deleting.value = true
   error.value = ''
   try {
-    if (!(await askConfirm('계속 진행하시겠습니까?', '이 민원을 삭제하시겠습니까?', '삭제'))) return
+    if (!(await askConfirm('계속 진행하시겠습니까?', '이 민원을 삭제하시겠습니까?', '삭제'))) {
+      return
+    }
     await fn_deleteComplaint(complaint.value.id)
     complaint.value = null
     showSuccess('삭제했습니다.', () => router.push(listTo))
@@ -70,9 +81,9 @@ const fn_remove = async () => {
 </script>
 
 <template>
-  <div class="train-page complaint-page">
+  <div class="train-page complaint-page complaint-detail-page">
     <header class="train-page__intro">
-      <h2 id="complaint-detail-heading">민원 상세</h2>
+      <h2>민원</h2>
       <p>민원 내용과 답변·처리 상태를 확인하세요.</p>
     </header>
 
@@ -82,51 +93,36 @@ const fn_remove = async () => {
       <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
     <template v-else-if="complaint">
-      <VCard class="train-card" elevation="0" tag="section" aria-labelledby="complaint-detail-heading">
-        <dl class="train-field-grid">
-          <div class="complaint-field--full">
-            <dt>제목</dt>
-            <dd>{{ complaint.title }}</dd>
+      <VCard class="train-card board-post" elevation="0" tag="article" aria-labelledby="complaint-detail-heading">
+        <header class="board-post__header">
+          <div class="board-post__badges">
+            <span class="board-post__badge">{{ gfn_getLabel(COMPLAINT_TYPES, complaint.type) }}</span>
+            <span class="board-post__badge" :class="complaint.status === 'ANSWERED' ? 'board-post__badge--answered' : 'board-post__badge--muted'">
+              {{ gfn_getLabel(COMPLAINT_STATUSES, complaint.status) }}
+            </span>
           </div>
-          <div>
-            <dt>민원 유형</dt>
-            <dd>{{ gfn_getLabel(COMPLAINT_TYPES, complaint.type) }}</dd>
-          </div>
-          <div>
-            <dt>처리 상태</dt>
-            <dd>{{ gfn_getLabel(COMPLAINT_STATUSES, complaint.status) }}</dd>
-          </div>
-          <div>
-            <dt>역 이름</dt>
-            <dd>{{ complaint.station }}</dd>
-          </div>
-          <div>
-            <dt>등록자 ID</dt>
-            <dd>{{ complaint.createdBy }}</dd>
-          </div>
-          <div>
-            <dt>등록일</dt>
-            <dd>{{ gfn_formatDate(complaint.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
-          </div>
-          <div v-if="complaint.updatedAt">
-            <dt>수정일</dt>
-            <dd>{{ gfn_formatDate(complaint.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd>
-          </div>
-          <div class="complaint-field--full">
-            <dt>내용</dt>
-            <dd class="complaint-editor-view">
-              <DATextEditor :model-value="complaint.content || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
-            </dd>
-          </div>
-        </dl>
-      </VCard>
-
-      <VCard class="train-card complaint-answer" elevation="0" tag="section" aria-labelledby="complaint-answer-heading">
-        <h2 id="complaint-answer-heading">답변</h2>
-        <div v-if="complaint.status === 'ANSWERED'" class="complaint-editor-view">
-          <DATextEditor :model-value="complaint.replyContent || ''" :editable="false" :focusable="false" :maxlength="null" min-height="250px" />
-        </div>
-        <p v-else>아직 등록된 답변이 없습니다.</p>
+          <h2 id="complaint-detail-heading" class="board-post__title">{{ complaint.title }}</h2>
+          <dl class="board-post__meta">
+            <div v-if="complaint.lineCodes?.length"><dt>노선</dt><dd>{{ complaint.lineCodes.map(code => `${code}호선`).join(', ') }}</dd></div>
+            <div><dt>역 이름</dt><dd>{{ complaint.station }}</dd></div>
+            <div><dt>등록자</dt><dd>{{ complaint.createdByName || '—' }}</dd></div>
+            <div><dt>등록일</dt><dd>{{ gfn_formatDate(complaint.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+          </dl>
+        </header>
+        <section class="board-post__body" aria-label="민원 내용">
+          <DATextEditor :model-value="complaint.content || ''" :editable="false" :focusable="false" reader-mode :maxlength="null" />
+        </section>
+        <section class="board-post__answer" aria-labelledby="complaint-answer-heading">
+          <h3 id="complaint-answer-heading">답변</h3>
+          <template v-if="complaint.status === 'ANSWERED'">
+            <dl class="board-post__meta board-post__answer-meta">
+              <div v-if="complaint.updatedByName"><dt>답변자</dt><dd>{{ complaint.updatedByName }}</dd></div>
+              <div v-if="complaint.updatedAt"><dt>답변일</dt><dd>{{ gfn_formatDate(complaint.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+            </dl>
+            <DAAnswerContent :model-value="complaint.replyContent || ''" />
+          </template>
+          <p v-else class="board-post__waiting">아직 등록된 답변이 없습니다.</p>
+        </section>
       </VCard>
     </template>
 

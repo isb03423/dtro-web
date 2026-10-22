@@ -8,6 +8,7 @@ const props = defineProps({
   placeholder: { type: String, default: '' },
   editable: { type: Boolean, default: true },
   focusable: { type: Boolean, default: true },
+  readerMode: { type: Boolean, default: false },
   showToolbar: { type: Boolean, default: true },
   minHeight: { type: String, default: null },
   maxHeight: { type: String, default: null },
@@ -36,6 +37,7 @@ defineExpose({
     :placeholder="placeholder"
     :editable="editable"
     :focusable="focusable"
+    :reader-mode="readerMode"
     :show-toolbar="editable && showToolbar"
     :min-height="minHeight"
     :max-height="maxHeight"

@@ -6,12 +6,11 @@ import { APP_ROLES } from '@/config/sideMenu'
 import { fn_deleteResource, fn_getResource } from '@/features/resource/api/resourceApi'
 import { useAuthStore } from '@/stores/auth'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/resource.scss'
+import '@styles/resource.scss'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const isGuest = computed(() => auth.role === APP_ROLES.GUEST)
 const canEdit = computed(() => [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
 const resource = ref(null)
@@ -22,16 +21,23 @@ let latestRequestId = 0
 
 const fn_load = async () => {
   const requestId = ++latestRequestId
+
   loading.value = true
   error.value = ''
   resource.value = null
   try {
     const response = await fn_getResource(route.params.resourceId)
-    if (requestId === latestRequestId) resource.value = response
+    if (requestId === latestRequestId) {
+      resource.value = response
+    }
   } catch (requestError) {
-    if (requestId === latestRequestId) error.value = requestError.message || '자료를 불러오지 못했습니다.'
+    if (requestId === latestRequestId) {
+      error.value = requestError.message || '자료를 불러오지 못했습니다.'
+    }
   } finally {
-    if (requestId === latestRequestId) loading.value = false
+    if (requestId === latestRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -45,8 +51,12 @@ onMounted(async () => {
 })
 
 const fn_remove = async () => {
-  if (!isAdmin.value || deleting.value || !resource.value) return
-  if (!window.confirm('이 자료를 삭제하시겠습니까?')) return
+  if (!isAdmin.value || deleting.value || !resource.value) {
+    return
+  }
+  if (!window.confirm('이 자료를 삭제하시겠습니까?')) {
+    return
+  }
   deleting.value = true
   error.value = ''
   try {
@@ -61,10 +71,10 @@ const fn_remove = async () => {
 </script>
 
 <template>
-  <div class="train-page resource-page">
+  <div class="train-page resource-page resource-detail-page">
     <header class="train-page__intro">
-      <h2>자료실 보기</h2>
-      <p>자료의 상세 내용과 첨부 파일을 확인합니다.</p>
+      <h2>자료실</h2>
+      <p>자료의 상세 내용과 첨부 파일을 확인하세요.</p>
     </header>
 
     <VCard v-if="loading" class="train-card train-card__state" elevation="0" role="status">자료를 불러오는 중입니다.</VCard>
@@ -72,28 +82,33 @@ const fn_remove = async () => {
       {{ error }} <button type="button" @click="fn_load">다시 시도</button>
     </VCard>
     <template v-else-if="resource">
-      <VCard class="train-card" elevation="0" tag="section">
-        <dl class="train-field-grid">
-          <div class="resource-page__full"><dt>제목</dt><dd>{{ resource.title }}</dd></div>
-          <div><dt>번호</dt><dd>{{ resource.resourceId }}</dd></div>
-          <div v-if="!isGuest"><dt>공개 여부</dt><dd>{{ resource.publicYn ? '공개' : '비공개' }}</dd></div>
-          <div><dt>등록일</dt><dd>{{ gfn_formatDate(resource.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
-          <div v-if="resource.updatedAt"><dt>수정일</dt><dd>{{ gfn_formatDate(resource.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
-          <div class="resource-page__full">
-            <dt>내용</dt>
-            <dd class="resource-page__content">
-              <DATextEditor :model-value="resource.content || ''" :editable="false" :maxlength="null" min-height="250px" />
-            </dd>
+      <VCard class="train-card board-post" elevation="0" tag="article" aria-labelledby="resource-detail-heading">
+        <header class="board-post__header">
+          <div class="board-post__badges">
+            <span v-if="canEdit" class="board-post__badge" :class="{ 'board-post__badge--muted': !resource.publicYn }">
+              {{ resource.publicYn ? '공개' : '비공개' }}
+            </span>
           </div>
-          <div v-if="resource.attachments?.length" class="resource-page__full">
-            <dt>첨부 파일</dt>
-            <dd class="resource-page__attachments">
-              <a v-for="file in resource.attachments" :key="file.attachmentId" :href="file.filePath">
-                <VIcon icon="mdi-paperclip" size="small" />{{ file.originalName }}
-              </a>
-            </dd>
-          </div>
-        </dl>
+          <h2 id="resource-detail-heading" class="board-post__title">{{ resource.title }}</h2>
+          <dl class="board-post__meta">
+            <div><dt>등록자</dt><dd>{{ resource.createdByName || '—' }}</dd></div>
+            <div><dt>등록일</dt><dd>{{ gfn_formatDate(resource.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+            <div v-if="resource.updatedByName"><dt>수정자</dt><dd>{{ resource.updatedByName }}</dd></div>
+            <div v-if="resource.updatedByName"><dt>수정일</dt><dd>{{ gfn_formatDate(resource.updatedAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
+          </dl>
+        </header>
+        <section class="board-post__body" aria-label="자료 내용">
+          <DATextEditor :model-value="resource.content || ''" :editable="false" :focusable="false" reader-mode :maxlength="null" />
+        </section>
+        <section class="board-post__files" aria-labelledby="resource-files-heading">
+          <h3 id="resource-files-heading">첨부 파일 {{ resource.attachments?.length || 0 }}건</h3>
+          <ul v-if="resource.attachments?.length" class="resource-page__attachments">
+            <li v-for="file in resource.attachments" :key="file.attachmentId">
+              <a :href="file.filePath"><VIcon icon="mdi-paperclip" size="small" />{{ file.originalName }}</a>
+            </li>
+          </ul>
+          <p v-else class="resource-page__empty-files">첨부 파일이 없습니다.</p>
+        </section>
       </VCard>
       <p v-if="error" class="train-inline-error" role="alert">{{ error }}</p>
     </template>
@@ -107,15 +122,3 @@ const fn_remove = async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.resource-page__full { grid-column: 1 / -1; }
-.resource-page__content {
-  display: block;
-  min-inline-size: 0;
-  inline-size: 100%;
-}
-.resource-page__content :deep(.tox-tinymce) {
-  inline-size: 100% !important;
-}
-</style>
