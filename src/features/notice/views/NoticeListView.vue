@@ -25,21 +25,22 @@ const allSearchFields = [
     key: 'publicYn',
     label: '공개여부',
     type: 'select',
-    compact: true,
     options: PUBLIC_OPTIONS,
   },
   {
-    key: 'keyword',
-    label: '검색어',
-    type: 'search-with-select',
-    searchTypeKey: 'searchType',
-    searchTypeLabel: '검색 범위',
-    defaultSearchType: 'all',
+    key: 'searchType',
+    label: '검색 범위',
+    type: 'select',
     options: [
       { label: '제목', value: 'title' },
       { label: '내용', value: 'content' },
       { label: '제목+내용', value: 'all' },
     ],
+  },
+  {
+    key: 'keyword',
+    label: '검색어',
+    type: 'search',
     placeholder: '제목 또는 내용 전체가 일치하는 검색어',
     wide: true,
     trim: true,
@@ -56,7 +57,7 @@ const {
   applyFilters,
   setGridOptions,
   reset,
-} = gfn_useListState(allSearchFields, { defaultSort: 'id,desc' })
+} = gfn_useListState(allSearchFields, { defaultSort: '' })
 
 const draft = ref({ publicYn: '', keyword: '', searchType: 'all' })
 const selected = ref([])
@@ -74,11 +75,10 @@ const totalPages = computed(() =>
 
 const headers = computed(() => {
   const baseHeaders = [
-    { title: '번호', key: 'id', width: '8%' },
-    { title: '중요', key: 'importantYn', width: '10%' },
-    ...(!isGuest.value ? [{ title: '공개여부', key: 'publicYn', width: '12%' }] : []),
-    { title: '제목', key: 'title', width: '40%' },
-    { title: '등록일', key: 'createdAt', width: '20%' },
+    { title: '중요', key: 'importantYn', width: 80, constrainWidth: true },
+    ...(!isGuest.value ? [{ title: '공개여부', key: 'publicYn', width: 100, constrainWidth: true }] : []),
+    { title: '제목', key: 'title', width: 480, fillRemaining: true },
+    { title: '등록일', key: 'createdAt', width: 190, constrainWidth: true },
   ]
   
   return baseHeaders
@@ -96,12 +96,14 @@ const fn_load = async () => {
       page: currentPage.value,
       size: pageSize.value,
     }
-    const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
-    const sortableKeys = ['id', 'importantYn', 'publicYn', 'title', 'createdAt']
-    const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'id'
-    const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
-    // 응답/그리드에서는 id를 사용하지만 JPA 엔티티의 실제 필드는 noticeId다.
-    queryParams.sort = `${sortKey === 'id' ? 'noticeId' : sortKey},${sortOrder}`
+    if (sort.value) {
+      const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
+      const sortableKeys = ['id', 'importantYn', 'publicYn', 'title', 'createdAt']
+      const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'id'
+      const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
+      // 응답/그리드에서는 id를 사용하지만 JPA 엔티티의 실제 필드는 noticeId다.
+      queryParams.sort = `${sortKey === 'id' ? 'noticeId' : sortKey},${sortOrder}`
+    }
 
     if (filters.value.keyword) {
       queryParams.keyword = filters.value.keyword
@@ -287,6 +289,7 @@ const fn_rowProps = ({ item }) => {
             <AppDataGrid
               class="train-grid"
               :columns="headers"
+              column-width-key="dtro:notice-column-widths:v4"
               :rows="result.content"
               :total-items="result.totalElements"
               :page-size="pageSize"
@@ -302,15 +305,15 @@ const fn_rowProps = ({ item }) => {
               @click:row="fn_openNotice"
             >
               <template #item.importantYn="{ item }">
-                <v-chip :color="item.importantYn ? 'error' : 'default'" size="x-small" label>
+                <span class="app-status-badge" :class="item.importantYn ? 'app-status-badge--important' : 'app-status-badge--regular'">
                   {{ item.importantYn ? '중요' : '일반' }}
-                </v-chip>
+                </span>
               </template>
 
               <template #item.publicYn="{ item }">
-                <v-chip :color="item.publicYn ? 'info' : 'grey'" size="x-small" label>
+                <span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">
                   {{ item.publicYn ? '공개' : '비공개' }}
-                </v-chip>
+                </span>
               </template>
 
               <template #item.title="{ item }">
@@ -348,16 +351,12 @@ const fn_rowProps = ({ item }) => {
                   <strong class="notice-list__title">{{ item.title }}</strong>
                   <dl>
                     <div>
-                      <dt>번호</dt>
-                      <dd>{{ item.id || item.noticeId }}</dd>
-                    </div>
-                    <div>
                       <dt>중요여부</dt>
-                      <dd>{{ item.importantYn ? '중요' : '일반' }}</dd>
+                      <dd><span class="app-status-badge" :class="item.importantYn ? 'app-status-badge--important' : 'app-status-badge--regular'">{{ item.importantYn ? '중요' : '일반' }}</span></dd>
                     </div>
                     <div v-if="!isGuest">
                       <dt>공개여부</dt>
-                      <dd>{{ item.publicYn ? '공개' : '비공개' }}</dd>
+                      <dd><span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">{{ item.publicYn ? '공개' : '비공개' }}</span></dd>
                     </div>
                   </dl>
                 </RouterLink>
