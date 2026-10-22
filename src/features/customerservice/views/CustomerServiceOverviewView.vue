@@ -12,7 +12,7 @@ import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDateTime } from '@/utils/date'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import '../styles/customer-service-overview.scss'
+import '@styles/customer-service.scss'
 
 const router = useRouter()
 const overview = ref(null)
@@ -227,9 +227,7 @@ onBeforeUnmount(() => {
                             </span>
                         </template>
                         <template #item.title="{ item }">
-                            <RouterLink class="customer-service-overview__title" :to="fn_detailTo(item)" @click.stop>
-                                {{ item.title }}
-                            </RouterLink>
+                            {{ item.title }}
                         </template>
                         <template #item.createdAt="{ item }">{{ gfn_formatDateTime(item.createdAt) }}</template>
                         <template #item.status="{ item }">

@@ -11,7 +11,7 @@ import { fn_deleteComplaint, fn_getComplaint } from '@/features/complaint/api/co
 import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/complaint.scss'
+import '@styles/customer-service.scss'
 
 const { dialog, finishDialog, showRequestError, showSuccess, askConfirm } = gfn_useCustomerServiceDialog()
 

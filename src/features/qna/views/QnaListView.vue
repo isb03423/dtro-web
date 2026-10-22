@@ -10,7 +10,7 @@ import { fn_listQnas } from '@/features/qna/api/qnaApi'
 import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/qna.scss'
+import '@styles/customer-service.scss'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -196,9 +196,7 @@ const fn_rowProps = ({ item }) => ({
               @click:row="fn_openQna"
             >
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation" :to="fn_detailTo(item.id)" @click.stop="fn_checkAccess($event, item)">
-                  {{ item.title }}
-                </RouterLink>
+                {{ item.title }}
               </template>
               <template #item.createdAt="{ item }">
                 {{ gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') }}

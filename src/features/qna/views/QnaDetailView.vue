@@ -11,7 +11,7 @@ import { fn_deleteQna, fn_getQna } from '@/features/qna/api/qnaApi'
 import { QNA_STATUSES, QNA_TYPES } from '@/features/qna/constants/qnaOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/qna.scss'
+import '@styles/customer-service.scss'
 
 const { dialog, finishDialog, showRequestError, showSuccess, askConfirm } = gfn_useCustomerServiceDialog()
 

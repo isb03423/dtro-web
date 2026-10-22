@@ -14,7 +14,7 @@ import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import { gfn_getEditorPlainText } from '@/utils/editorText'
 import { gfn_validateRequiredFields } from '@/utils/validation'
-import '../styles/qna.scss'
+import '@styles/customer-service.scss'
 
 const { dialog, finishDialog, showAccessDenied, showRequestError, showSuccess, showValidationError } = gfn_useCustomerServiceDialog()
 

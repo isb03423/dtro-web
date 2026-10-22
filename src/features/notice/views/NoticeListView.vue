@@ -1,7 +1,9 @@
 <script setup>
 import AppDataGrid from '@/components/common/AppDataGrid.vue'
+import AppMessageDialog from '@/components/common/AppMessageDialog.vue'
 import AppSearchCondition from '@/components/common/AppSearchCondition.vue'
 import { gfn_useListState } from '@/composables/useListState'
+import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 import { fn_listNotices, fn_deleteNotices, fn_updateNoticesPublicYn } from '@/features/notice/api/noticeApi'
 import { gfn_formatDate } from '@/utils/date'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -11,9 +13,9 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
-const isGuest = computed(() => auth.role === APP_ROLES.GUEST)
 const canCreate = computed(() => [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
+const { dialog, finishDialog, showMessage, askConfirm } = gfn_useMessageDialog()
 
 const PUBLIC_OPTIONS = [
   { label: '공개', value: true },
@@ -46,7 +48,7 @@ const allSearchFields = [
     trim: true,
   },
 ]
-const searchFields = computed(() => isGuest.value ? allSearchFields.filter(field => field.key !== 'publicYn') : allSearchFields)
+const searchFields = computed(() => canCreate.value ? allSearchFields : allSearchFields.filter(field => field.key !== 'publicYn'))
 
 const {
   filters,
@@ -66,7 +68,6 @@ const bulkSaving = ref(false)
 const result = ref({ content: [], page: 0, totalElements: 0, totalPages: 0 })
 const loading = ref(false)
 const error = ref('')
-const successMessage = ref('')
 let latestRequestId = 0
 
 const totalPages = computed(() =>
@@ -76,7 +77,7 @@ const totalPages = computed(() =>
 const headers = computed(() => {
   const baseHeaders = [
     { title: '중요', key: 'importantYn', width: 80, constrainWidth: true },
-    ...(!isGuest.value ? [{ title: '공개여부', key: 'publicYn', width: 100, constrainWidth: true }] : []),
+    ...(canCreate.value ? [{ title: '공개여부', key: 'publicYn', width: 100, constrainWidth: true }] : []),
     { title: '제목', key: 'title', width: 480, fillRemaining: true },
     { title: '등록일', key: 'createdAt', width: 190, constrainWidth: true },
   ]
@@ -90,7 +91,6 @@ const fn_load = async () => {
 
   loading.value = true
   error.value = ''
-  successMessage.value = ''
   try {
     const queryParams = {
       page: currentPage.value,
@@ -110,7 +110,7 @@ const fn_load = async () => {
       queryParams.searchType = filters.value.searchType || 'all'
     }
 
-    if (typeof filters.value.publicYn === 'boolean') {
+    if (canCreate.value && typeof filters.value.publicYn === 'boolean') {
       queryParams.publicYn = filters.value.publicYn
     }
 
@@ -198,24 +198,35 @@ const fn_removeSelected = async () => {
 }
 
 const fn_updateSelectedPublicYn = async () => {
-  if (!isAdmin.value || !selected.value.length || bulkPublicYn.value === '' || bulkSaving.value) return
+  if (!isAdmin.value || !selected.value.length || bulkPublicYn.value === '' || bulkSaving.value) {
+    return
+  }
+
   const publicYn = bulkPublicYn.value === 'true'
   const label = publicYn ? '공개' : '비공개'
-  if (!window.confirm(`선택한 공지사항 ${selected.value.length}건을 ${label}로 변경하시겠습니까?`)) return
+  if (!(await askConfirm('공개 여부를 변경하시겠습니까?', `선택한 공지사항 ${selected.value.length}건을 ${label}로 변경하시겠습니까?`, '변경'))) {
+    return
+  }
 
   bulkSaving.value = true
   error.value = ''
+
   try {
     const ids = [...selected.value]
     const updatedCount = await fn_updateNoticesPublicYn(ids, publicYn)
     bulkPublicYn.value = ''
     await fn_load()
-    if (error.value) throw new Error(`목록을 다시 불러오지 못했습니다. ${error.value}`)
-    successMessage.value = `${typeof updatedCount === 'number' ? updatedCount : ids.length}건의 공개 여부를 ${label}로 변경했습니다.`
+    if (error.value) {
+      showMessage('warning', '변경은 완료되었습니다', `목록을 다시 불러오지 못했습니다. ${error.value}`)
+
+      return
+    }
+
+    showMessage('success', '처리가 완료되었습니다', `${typeof updatedCount === 'number' ? updatedCount : ids.length}건의 공개 여부를 ${label}로 변경했습니다.`)
   } catch (requestError) {
     const message = requestError.message || '공개 여부를 변경하지 못했습니다.'
     await fn_load()
-    error.value = message
+    showMessage('error', '오류가 발생했습니다', message)
   } finally {
     bulkSaving.value = false
   }
@@ -282,7 +293,6 @@ const fn_rowProps = ({ item }) => {
             </div>
           </div>
 
-          <p v-if="successMessage" class="notice-list__feedback notice-list__feedback--success" role="status">{{ successMessage }}</p>
           <p v-if="error" class="notice-list__feedback notice-list__feedback--error" role="alert">{{ error }}</p>
 
           <div class="train-table-wrap">
@@ -317,9 +327,7 @@ const fn_rowProps = ({ item }) => {
               </template>
 
               <template #item.title="{ item }">
-                <RouterLink class="train-grid__formation notice-list__title" :to="fn_detailTo(item.id || item.noticeId)" @click.stop>
-                  {{ item.title }}
-                </RouterLink>
+                <span class="notice-list__title">{{ item.title }}</span>
               </template>
 
               <template #item.createdAt="{ item }">
@@ -354,7 +362,7 @@ const fn_rowProps = ({ item }) => {
                       <dt>중요여부</dt>
                       <dd><span class="app-status-badge" :class="item.importantYn ? 'app-status-badge--important' : 'app-status-badge--regular'">{{ item.importantYn ? '중요' : '일반' }}</span></dd>
                     </div>
-                    <div v-if="!isGuest">
+                    <div v-if="canCreate">
                       <dt>공개여부</dt>
                       <dd><span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">{{ item.publicYn ? '공개' : '비공개' }}</span></dd>
                     </div>
@@ -366,6 +374,16 @@ const fn_rowProps = ({ item }) => {
         </VCard>
       </VCol>
     </VRow>
+    <AppMessageDialog
+      :model-value="dialog.open"
+      :type="dialog.type"
+      :title="dialog.title"
+      :message="dialog.message"
+      :show-cancel="dialog.showCancel"
+      :confirm-text="dialog.confirmText"
+      @confirm="finishDialog(true)"
+      @cancel="finishDialog(false)"
+    />
   </div>
 </template>
 
@@ -398,7 +416,6 @@ const fn_rowProps = ({ item }) => {
   font-size: 14px;
 }
 
-.notice-list__feedback--success { color: #147a42; }
 .notice-list__feedback--error { color: #c62828; }
 
 .notice-list__title {
