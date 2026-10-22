@@ -11,7 +11,7 @@ import svgLoader from 'vite-svg-loader'
 export default defineConfig(({ command }) => ({
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:8081',
+      '/api': 'http://127.0.0.1:8080',
     },
   },
   plugins: [
