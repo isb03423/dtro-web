@@ -6,12 +6,10 @@ import { fn_deleteNotice, fn_getNoticeDetail } from '@/features/notice/api/notic
 import { gfn_formatDate } from '@/utils/date'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
-import '../styles/notice.scss'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const isGuest = computed(() => auth.role === APP_ROLES.GUEST)
 const canEdit = computed(() => [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
 const notice = ref(null)
@@ -93,7 +91,7 @@ const fn_remove = async () => {
           <span class="board-post__badge" :class="notice.importantYn ? 'board-post__badge--important' : 'board-post__badge--muted'">
             {{ notice.importantYn ? '중요' : '일반' }}
           </span>
-          <span v-if="!isGuest" class="board-post__badge" :class="{ 'board-post__badge--muted': !notice.publicYn }">
+          <span v-if="canEdit" class="board-post__badge" :class="{ 'board-post__badge--muted': !notice.publicYn }">
             {{ notice.publicYn ? '공개' : '비공개' }}
           </span>
         </div>
