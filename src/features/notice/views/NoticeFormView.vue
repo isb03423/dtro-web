@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import DATextEditor from '@/components/common/DATextEditor.vue'
 import { fn_createNotice, fn_getNoticeDetail, fn_updateNotice } from '@/features/notice/api/noticeApi'
 import { gfn_validateRequiredFields } from '@/utils/validation'
-import '../styles/notice.scss'
 
 const route = useRoute()
 const router = useRouter()

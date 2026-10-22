@@ -6,12 +6,11 @@ import { APP_ROLES } from '@/config/sideMenu'
 import { fn_deleteResource, fn_getResource } from '@/features/resource/api/resourceApi'
 import { useAuthStore } from '@/stores/auth'
 import { gfn_formatDate } from '@/utils/date'
-import '../styles/resource.scss'
+import '@styles/resource.scss'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const isGuest = computed(() => auth.role === APP_ROLES.GUEST)
 const canEdit = computed(() => [APP_ROLES.TRAIN_MANAGER, APP_ROLES.ADMIN].includes(auth.role))
 const isAdmin = computed(() => auth.role === APP_ROLES.ADMIN)
 const resource = ref(null)
@@ -86,7 +85,7 @@ const fn_remove = async () => {
       <VCard class="train-card board-post" elevation="0" tag="article" aria-labelledby="resource-detail-heading">
         <header class="board-post__header">
           <div class="board-post__badges">
-            <span v-if="!isGuest" class="board-post__badge" :class="{ 'board-post__badge--muted': !resource.publicYn }">
+            <span v-if="canEdit" class="board-post__badge" :class="{ 'board-post__badge--muted': !resource.publicYn }">
               {{ resource.publicYn ? '공개' : '비공개' }}
             </span>
           </div>

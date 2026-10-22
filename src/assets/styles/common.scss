@@ -700,3 +700,11 @@
 .app-status-timeline__muted { color: #75808f; font-size: 13px; }
 .app-status-timeline__error { color: #b42336; }
 .app-status-timeline__error button { color: #064984; text-decoration: underline; }
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  inline-size: 100%;
+  border: 0;
+  border-radius: 0;
+}

@@ -13,7 +13,7 @@ import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/consta
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
 import { gfn_validateRequiredFields } from '@/utils/validation'
-import '../styles/complaint.scss'
+import '@styles/customer-service.scss'
 
 const { dialog, finishDialog, showAccessDenied, showRequestError, showSuccess, showValidationError } = gfn_useCustomerServiceDialog()
 
