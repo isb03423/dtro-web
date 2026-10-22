@@ -20,19 +20,21 @@ const publicOptions = [
   { label: '비공개', value: false },
 ]
 const allSearchFields = [
-  { key: 'publicYn', label: '공개여부', type: 'select', options: publicOptions, compact: true },
+  { key: 'publicYn', label: '공개여부', type: 'select', options: publicOptions },
   {
-    key: 'keyword',
-    label: '검색어',
-    type: 'search-with-select',
-    searchTypeKey: 'searchType',
-    searchTypeLabel: '검색 범위',
-    defaultSearchType: 'all',
+    key: 'searchType',
+    label: '검색 범위',
+    type: 'select',
     options: [
       { label: '제목', value: 'title' },
       { label: '내용', value: 'content' },
       { label: '제목+내용', value: 'all' },
     ],
+  },
+  {
+    key: 'keyword',
+    label: '검색어',
+    type: 'search',
     placeholder: '검색어를 입력하세요',
     wide: true,
     trim: true,
@@ -48,7 +50,7 @@ const {
   applyFilters,
   setGridOptions,
   reset,
-} = gfn_useListState(allSearchFields, { defaultSort: 'resourceId,desc' })
+} = gfn_useListState(allSearchFields, { defaultSort: '' })
 const draft = ref({ publicYn: '', keyword: '', searchType: 'all' })
 const selected = ref([])
 const bulkPublicYn = ref('')
@@ -61,10 +63,9 @@ let latestRequestId = 0
 
 const headers = computed(() => {
   const columns = [
-    { title: '번호', key: 'resourceId', width: '10%' },
-    ...(!isGuest.value ? [{ title: '공개 여부', key: 'publicYn', width: '14%' }] : []),
-    { title: '제목', key: 'title', width: '48%' },
-    { title: '등록일', key: 'createdAt', width: '20%' },
+    ...(!isGuest.value ? [{ title: '공개 여부', key: 'publicYn', width: 100, constrainWidth: true }] : []),
+    { title: '제목', key: 'title', width: 520, fillRemaining: true },
+    { title: '등록일', key: 'createdAt', width: 190, constrainWidth: true },
   ]
   return columns
 })
@@ -76,11 +77,14 @@ const fn_load = async () => {
   error.value = ''
   successMessage.value = ''
   try {
-    const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
-    const sortableKeys = ['resourceId', 'title', 'publicYn', 'createdAt']
-    const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'resourceId'
-    const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
-    const params = { page: currentPage.value, size: pageSize.value, sort: `${sortKey},${sortOrder}` }
+    const params = { page: currentPage.value, size: pageSize.value }
+    if (sort.value) {
+      const [requestedSortKey, requestedSortOrder] = sort.value.split(',')
+      const sortableKeys = ['resourceId', 'title', 'publicYn', 'createdAt']
+      const sortKey = sortableKeys.includes(requestedSortKey) ? requestedSortKey : 'resourceId'
+      const sortOrder = requestedSortOrder === 'asc' ? 'asc' : 'desc'
+      params.sort = `${sortKey},${sortOrder}`
+    }
     if (filters.value.keyword) {
       params.keyword = filters.value.keyword
       params.searchType = filters.value.searchType || 'all'
@@ -217,6 +221,7 @@ const fn_rowProps = ({ item }) => ({
             <AppDataGrid
               class="train-grid"
               :columns="headers"
+              column-width-key="dtro:resource-column-widths:v4"
               :rows="result.content"
               :total-items="result.totalElements"
               :page-size="pageSize"
@@ -235,9 +240,9 @@ const fn_rowProps = ({ item }) => ({
                 <RouterLink class="train-grid__formation resource-list__title" :to="`/resources/${item.resourceId}`" @click.stop>{{ item.title }}</RouterLink>
               </template>
               <template #item.publicYn="{ item }">
-                <v-chip :color="item.publicYn ? 'info' : 'grey'" size="x-small" label>
+                <span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">
                   {{ item.publicYn ? '공개' : '비공개' }}
-                </v-chip>
+                </span>
               </template>
               <template #item.createdAt="{ item }">{{ gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</template>
               <template #no-data>
@@ -259,8 +264,7 @@ const fn_rowProps = ({ item }) => ({
                 <RouterLink class="train-mobile-card" :to="`/resources/${item.resourceId}`">
                   <strong class="resource-list__title">{{ item.title }}</strong>
                   <dl>
-                    <div><dt>번호</dt><dd>{{ item.resourceId }}</dd></div>
-                    <div v-if="!isGuest"><dt>공개 여부</dt><dd>{{ item.publicYn ? '공개' : '비공개' }}</dd></div>
+                    <div v-if="!isGuest"><dt>공개 여부</dt><dd><span class="app-status-badge" :class="item.publicYn ? 'app-status-badge--public' : 'app-status-badge--private'">{{ item.publicYn ? '공개' : '비공개' }}</span></dd></div>
                     <div><dt>등록일</dt><dd>{{ gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') }}</dd></div>
                   </dl>
                 </RouterLink>
@@ -314,8 +318,4 @@ const fn_rowProps = ({ item }) => ({
   white-space: nowrap;
 }
 
-:deep(.train-grid .v-data-table__th--sorted .v-data-table-header__content) {
-  justify-content: flex-start;
-  gap: 6px;
-}
 </style>

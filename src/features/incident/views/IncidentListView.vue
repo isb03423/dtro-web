@@ -493,7 +493,7 @@ onBeforeUnmount(() => {
             </span>
           </template>
           <template #item.status="{ item }">
-            <span class="incident-status" :class="`incident-status--${item.status}`">
+            <span class="app-status-badge" :class="`app-status-badge--${item.status}`">
               {{ gfn_getLabel(INCIDENT_STATUSES, item.status) }}
             </span>
           </template>
