@@ -14,7 +14,13 @@ const fn_submit = async () => {
   try {
     await authStore.login(form.value.username, form.value.password)
     loginError.value = ''
-    await router.push(authStore.role === APP_ROLES.ADMIN ? '/admin/dashboard' : '/dashboard')
+    if (authStore.role === APP_ROLES.ADMIN) {
+      await router.push('/admin/dashboard')
+    } else if (authStore.role === APP_ROLES.TRAIN_MANAGER) {
+      await router.push('/train-overview')
+    } else {
+      await router.push('/dashboard')
+    }
   } catch (error) {
     loginError.value = error.status === 401
       ? '아이디 또는 비밀번호가 일치하지 않습니다.'
