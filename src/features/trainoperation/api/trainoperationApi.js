@@ -5,12 +5,11 @@ const BASE = '/api/train-operations'
 // 검색·페이지·정렬 조건으로 열차 운행 목록을 조회한다.
 export const fn_listOperations = filters => {
   // 빈 문자열 조건은 전송하지 않아 서버가 전체 검색으로 처리하게 한다.
-  const body = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ''))
+  const params = new URLSearchParams(
+    Object.entries(filters).filter(([, value]) => value !== '' && value != null),
+  )
 
-  return fn_apiRequest(`${BASE}/search`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+  return fn_apiRequest(`${BASE}/search?${params}`, { cache: 'no-store' })
 }
 
 // 추가하거나 수정한 운행정보 행을 일괄 저장한다.
