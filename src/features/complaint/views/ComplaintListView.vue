@@ -117,7 +117,7 @@ const fn_updateGridOptions = options => {
 }
 
 
-// 화면 안내와 별도로 서버에서도 동일한 접근 권한을 검사한다.
+// 제목 링크는 custom 슬롯에서 권한 확인 후 navigate를 호출한다. 서버에서도 접근 권한을 검사한다.
 const fn_canRead = item => auth.isAuthenticated && (auth.role === APP_ROLES.ADMIN
   || (auth.memberId != null && item.createdBy != null && String(auth.memberId) === String(item.createdBy)))
 

@@ -29,7 +29,7 @@ const isOwner = computed(() => auth.memberId != null && complaint.value?.created
   && String(auth.memberId) === String(complaint.value.createdBy))
 
 const canEdit = computed(() => auth.isAuthenticated && !isAdmin.value && isOwner.value && complaint.value?.status === 'PENDING')
-const canAnswer = computed(() => isAdmin.value && complaint.value?.status === 'PENDING')
+const canAnswer = computed(() => isAdmin.value && ['PENDING', 'ANSWERED'].includes(complaint.value?.status))
 let latestRequestId = 0
 
 const fn_load = async () => {
@@ -133,7 +133,7 @@ const fn_remove = async () => {
         {{ deleting ? '삭제 중...' : '삭제' }}
       </button>
       <RouterLink v-if="(canEdit || canAnswer) && !loading && !deleting" class="train-button train-button--primary" :to="`/complaints/${complaint.id}/edit`">
-        {{ canAnswer ? '답변 등록' : '수정' }}
+        {{ canAnswer ? (complaint.status === 'ANSWERED' ? '답변 수정' : '답변 등록') : '수정' }}
       </RouterLink>
     </div>
     <AppMessageDialog
