@@ -260,6 +260,21 @@ const fn_changeDirection = (row, value) => {
   fn_clearStations(row)
 }
 
+// 시각을 변경한 뒤 순서가 뒤집히면 도착시각을 출발시각에 맞춘다.
+const fn_changeTime = (row, field, value) => {
+  row[field] = value
+  if (!row.firstTrainTime || !row.lastTrainTime || row.lastTrainTime >= row.firstTrainTime) {
+    return
+  }
+
+  row.lastTrainTime = row.firstTrainTime
+  showMessage(
+    'warning',
+    '입력값을 확인해주세요',
+    `도착시각은 출발시각보다 빠를 수 없습니다. 도착시각을 출발시각(${row.firstTrainTime})과 같게 변경했습니다.`
+  )
+}
+
 // 선택 종류에 맞는 열차·노선·역 목록을 불러온다.
 const fn_openPopup = async (kind, target = null, field = '') => {
   if (kind === 'station' && !target.lineCode) {
@@ -392,6 +407,11 @@ const fn_save = async () => {
       '입력값을 확인해주세요',
       '변경된 행의 열차, 노선, 출발역, 도착역, 출발·도착시각을 모두 입력해주세요.'
     )
+
+    return
+  }
+  if (changed.some(row => row.lastTrainTime < row.firstTrainTime)) {
+    showMessage('warning', '입력값을 확인해주세요', '도착시각은 출발시각보다 빠를 수 없습니다.')
 
     return
   }
@@ -555,10 +575,24 @@ onMounted(async () => {
             </button>
           </template>
           <template #item.firstTrainTime="{ item }">
-            <input v-model="item.firstTrainTime" class="operation-time" type="time" aria-label="출발시각" />
+            <input
+              :value="item.firstTrainTime"
+              class="operation-time"
+              type="time"
+              :max="item.lastTrainTime || undefined"
+              aria-label="출발시각"
+              @change="fn_changeTime(item, 'firstTrainTime', $event.target.value)"
+            />
           </template>
           <template #item.lastTrainTime="{ item }">
-            <input v-model="item.lastTrainTime" class="operation-time" type="time" aria-label="도착시각" />
+            <input
+              :value="item.lastTrainTime"
+              class="operation-time"
+              type="time"
+              :min="item.firstTrainTime || undefined"
+              aria-label="도착시각"
+              @change="fn_changeTime(item, 'lastTrainTime', $event.target.value)"
+            />
           </template>
           <template #item.createdAt="{ item }">
             {{ item.createdAt ? gfn_formatDate(item.createdAt, 'YYYY-MM-DD HH:mm:ss') : '—' }}
