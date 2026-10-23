@@ -8,10 +8,11 @@ import CustomerServiceStationFields from '@/features/customerservice/components/
 import { useRoute, useRouter } from 'vue-router'
 import { APP_ROLES } from '@/config/sideMenu'
 import { useAuthStore } from '@/stores/auth'
-import { fn_answerComplaint, fn_createComplaint, fn_getComplaint, fn_updateComplaint } from '@/features/complaint/api/complaintApi'
+import { fn_answerComplaint, fn_createComplaint, fn_getComplaint, fn_updateComplaint, fn_updateComplaintAnswer } from '@/features/complaint/api/complaintApi'
 import { COMPLAINT_STATUSES, COMPLAINT_TYPES } from '@/features/complaint/constants/complaintOptions'
 import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDate } from '@/utils/date'
+import { gfn_getEditorPlainText } from '@/utils/editorText'
 import { gfn_validateRequiredFields } from '@/utils/validation'
 import '@styles/customer-service.scss'
 
@@ -41,7 +42,8 @@ const canEdit = computed(() => isEdit.value && auth.isAuthenticated
 const canSaveComplaint = computed(() => !loading.value && (canCreate.value || canEdit.value))
 
 const canAnswer = computed(() => isEdit.value && isAdmin.value
-  && !loading.value && complaint.value?.status === 'PENDING')
+  && !loading.value && ['PENDING', 'ANSWERED'].includes(complaint.value?.status))
+const isAnswerEdit = computed(() => complaint.value?.status === 'ANSWERED')
 
 const contentEditor = ref(null)
 const form = ref({ title: '', type: '', station: '', content: '' })
@@ -76,6 +78,7 @@ const fn_load = async () => {
 
     if (requestId === latestRequestId) {
       complaint.value = response
+      replyContent.value = gfn_getEditorPlainText(response.replyContent)
       form.value = { title: response.title, type: response.type, station: response.station, content: response.content }
     }
   } catch (requestError) {
@@ -181,15 +184,19 @@ const fn_answer = async () => {
   }
 
   const id = complaint.value.id
+  const editingAnswer = isAnswerEdit.value
 
   saving.value = true
   pageError.value = ''
   try {
-    const saved = await fn_answerComplaint(id, { replyContent: reply })
+    const saved = editingAnswer
+      ? await fn_updateComplaintAnswer(id, { replyContent: reply })
+      : await fn_answerComplaint(id, { replyContent: reply })
 
     if (complaint.value?.id === id) {
       complaint.value = saved
-      showSuccess('답변을 등록했습니다.', () => router.push(`/complaints/${id}`))
+      replyContent.value = gfn_getEditorPlainText(saved.replyContent)
+      showSuccess(editingAnswer ? '답변을 수정했습니다.' : '답변을 등록했습니다.', () => router.push(`/complaints/${id}`))
     }
   } catch (requestError) {
     if (complaint.value?.id === id) {
@@ -205,8 +212,8 @@ const fn_answer = async () => {
 <template>
   <div class="train-page complaint-page complaint-compose-page">
     <header class="train-page__intro">
-      <h2>{{ isEdit ? (isAdmin ? '민원 답변' : '민원 수정') : '민원 등록' }}</h2>
-      <p v-if="canAnswer">민원 내용은 읽기 전용입니다. 답변만 등록할 수 있습니다.</p>
+      <h2>{{ isEdit ? (isAdmin ? (isAnswerEdit ? '답변 수정' : '답변 등록') : '민원 수정') : '민원 등록' }}</h2>
+      <p v-if="canAnswer">민원 내용은 읽기 전용입니다. 답변만 등록·수정할 수 있습니다.</p>
       <p v-else-if="isEdit && !canEdit && !loading">민원 내용은 읽기 전용입니다. 작성한 본인만 답변 대기 상태에서 수정할 수 있습니다.</p>
       <p v-else>필수 항목을 확인한 뒤 저장하세요. * 필수 입력</p>
     </header>
@@ -270,8 +277,8 @@ const fn_answer = async () => {
     </VCard>
 
     <VCard v-if="isEdit && complaint" class="train-card complaint-answer" elevation="0" tag="section" aria-labelledby="complaint-answer-heading">
-      <h2 id="complaint-answer-heading">답변</h2>
-      <div v-if="complaint.status === 'ANSWERED'" class="complaint-editor-view">
+      <h2 id="complaint-answer-heading">{{ canAnswer ? (isAnswerEdit ? '답변 수정' : '답변 작성') : '답변' }}</h2>
+      <div v-if="complaint.status === 'ANSWERED' && !canAnswer" class="complaint-editor-view">
         <DAAnswerContent :model-value="complaint.replyContent || ''" />
       </div>
       <form v-else-if="canAnswer" id="complaint-answer-form" novalidate @submit.prevent="fn_answer">
@@ -295,7 +302,7 @@ const fn_answer = async () => {
         {{ saving ? '저장 중...' : '저장' }}
       </button>
       <button v-if="canAnswer && !loading" class="train-button train-button--primary" type="submit" form="complaint-answer-form" :disabled="saving">
-        {{ saving ? '저장 중...' : '답변 등록' }}
+        {{ saving ? '저장 중...' : (isAnswerEdit ? '답변 수정 저장' : '답변 등록') }}
       </button>
     </div>
     <AppMessageDialog
