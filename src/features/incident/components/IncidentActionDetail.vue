@@ -4,7 +4,6 @@ import AppStatusTimeline from '@/components/common/AppStatusTimeline.vue'
 import { gfn_useMessageDialog } from '@/composables/useMessageDialog'
 import { fn_getIncident, fn_getIncidentHistory, fn_processIncident } from '@/features/incident/api/incidentApi'
 import { INCIDENT_HISTORY_TITLES, INCIDENT_STATUSES } from '@/features/incident/constants/incidentOptions'
-import { gfn_getLabel } from '@/utils/common'
 import { gfn_formatDateTime } from '@/utils/date'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
@@ -219,20 +218,16 @@ onBeforeUnmount(() => {
         <VCard class="incident-detail-card" elevation="0">
           <header class="incident-panel-heading">
             <h2>장애 접수 내용</h2>
-            <span class="incident-muted">읽기 전용</span>
           </header>
           <div class="incident-detail-body">
-            <div class="incident-reception-title">
-              <span>장애번호 {{ incident.incidentNumber }}</span>
-              <h3>{{ incident.incidentType }}</h3>
+            <div class="incident-reception-tags">
+              <span>장애 {{ incident.incidentNumber }}</span>
+              <span>운행 {{ incident.operationNumber }}</span>
             </div>
-            <dl class="incident-reception-facts">
+            <h3 class="incident-reception-title">{{ incident.incidentType }}</h3>
+            <dl class="incident-reception-meta">
               <div>
-                <dt>운행번호</dt>
-                <dd>{{ incident.operationNumber }}</dd>
-              </div>
-              <div>
-                <dt>노선 / 열차</dt>
+                <dt>노선·열차</dt>
                 <dd>{{ incident.lineCode }}호선 · {{ incident.trainNumber }}</dd>
               </div>
               <div>
@@ -240,35 +235,26 @@ onBeforeUnmount(() => {
                 <dd>{{ gfn_formatDateTime(incident.occurredAt) }}</dd>
               </div>
               <div>
-                <dt>접수자</dt>
+                <dt>등록자</dt>
                 <dd>{{ incident.createdByName || '—' }}</dd>
               </div>
+              <div>
+                <dt>등록일시</dt>
+                <dd>{{ gfn_formatDateTime(incident.createdAt) }}</dd>
+              </div>
+              <div>
+                <dt>수정자</dt>
+                <dd>{{ incident.updatedByName || '—' }}</dd>
+              </div>
+              <div>
+                <dt>수정일시</dt>
+                <dd>{{ gfn_formatDateTime(incident.updatedAt) }}</dd>
+              </div>
             </dl>
-            <section class="incident-impact">
-              <h3>영향범위</h3>
-              <p class="incident-content">{{ incident.impactDetail }}</p>
+            <section class="incident-reception-content">
+              <h4>영향범위</h4>
+              <p>{{ incident.impactDetail }}</p>
             </section>
-            <details class="incident-audit">
-              <summary>등록·수정 정보</summary>
-              <dl>
-                <div>
-                  <dt>등록자</dt>
-                  <dd>{{ incident.createdByName || '—' }}</dd>
-                </div>
-                <div>
-                  <dt>등록일시</dt>
-                  <dd>{{ gfn_formatDateTime(incident.createdAt) }}</dd>
-                </div>
-                <div>
-                  <dt>수정자</dt>
-                  <dd>{{ incident.updatedByName || '—' }}</dd>
-                </div>
-                <div>
-                  <dt>수정일시</dt>
-                  <dd>{{ gfn_formatDateTime(incident.updatedAt) }}</dd>
-                </div>
-              </dl>
-            </details>
           </div>
         </VCard>
         <VCard class="incident-detail-card" elevation="0">
@@ -276,6 +262,17 @@ onBeforeUnmount(() => {
             <h2>조치 내용</h2>
           </header>
           <form class="incident-form" @submit.prevent="fn_process('save')">
+            <div class="incident-action-steps">
+              <ol class="incident-steps" aria-label="장애 처리 단계">
+                <li
+                  v-for="status in INCIDENT_STATUSES"
+                  :key="status.value"
+                  :aria-current="status.value === incident.status ? 'step' : undefined"
+                >
+                  <span class="incident-step">{{ status.label }}</span>
+                </li>
+              </ol>
+            </div>
             <p class="incident-stage-help">{{ stageHelp }}</p>
             <fieldset :disabled="saving">
               <label>
@@ -325,24 +322,7 @@ onBeforeUnmount(() => {
         </VCard>
       </div>
       <aside class="incident-detail-aside">
-        <VCard class="incident-detail-card" elevation="0">
-          <div class="incident-detail-body">
-            <h3>현재 상태</h3>
-            <span class="app-status-badge" :class="`app-status-badge--${incident.status}`">
-              {{ gfn_getLabel(INCIDENT_STATUSES, incident.status) }}
-            </span>
-            <ol class="incident-steps" aria-label="장애 처리 단계">
-              <li
-                v-for="status in INCIDENT_STATUSES"
-                :key="status.value"
-                :aria-current="status.value === incident.status ? 'step' : undefined"
-              >
-                {{ status.label }}
-              </li>
-            </ol>
-          </div>
-        </VCard>
-        <VCard class="incident-detail-card" elevation="0">
+        <VCard class="incident-detail-card incident-action-history" elevation="0">
           <div class="incident-detail-body">
             <AppStatusTimeline
               :statuses="INCIDENT_STATUSES"

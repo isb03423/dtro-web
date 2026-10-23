@@ -200,7 +200,7 @@ const fn_openForm = async row => {
     id: null,
     operationId: null,
     operationLabel: '',
-    incidentType: INCIDENT_TYPES[0],
+    incidentType: '',
     occurredAt: gfn_formatDateTimeInput(new Date().toISOString()),
     impactDetail: '',
     actionDetail: '',
@@ -536,21 +536,21 @@ onBeforeUnmount(() => {
           <fieldset :disabled="saving">
             <div class="incident-field-grid">
               <label>
-                운행번호 · 필수
-                <button type="button" class="incident-picker" @click="fn_openOperationPicker('form')">
-                  {{ form.operationLabel || '운행번호 선택' }}
+                <span class="incident-required-label">운행번호 <span aria-hidden="true">*</span></span>
+                <button type="button" class="incident-picker" aria-label="운행번호 선택" @click="fn_openOperationPicker('form')">
+                  {{ form.operationLabel }}
                   <VIcon icon="bx-search" aria-hidden="true" />
                 </button>
               </label>
               <label>
-                장애유형 · 필수
-                <input v-model="form.incidentType" list="incident-type-options" maxlength="50" required />
-                <datalist id="incident-type-options">
-                  <option v-for="type in INCIDENT_TYPES" :key="type" :value="type" />
-                </datalist>
+                <span class="incident-required-label">장애유형 <span aria-hidden="true">*</span></span>
+                <select v-model="form.incidentType" required>
+                  <option value="" disabled>선택하세요</option>
+                  <option v-for="type in INCIDENT_TYPES" :key="type" :value="type">{{ type }}</option>
+                </select>
               </label>
               <label>
-                발생일시 · 필수
+                <span class="incident-required-label">발생일시 <span aria-hidden="true">*</span></span>
                 <input v-model="form.occurredAt" type="datetime-local" required />
               </label>
               <label>
@@ -559,7 +559,7 @@ onBeforeUnmount(() => {
               </label>
             </div>
             <label>
-              영향범위 · 필수
+              <span class="incident-required-label">영향범위 <span aria-hidden="true">*</span></span>
               <textarea v-model="form.impactDetail" rows="4" required />
             </label>
             <label v-if="form.id">
@@ -599,7 +599,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
     <VDialog v-model="history.open" max-width="640">
-      <VCard class="incident-dialog" elevation="0">
+      <VCard class="incident-dialog incident-dialog--history" elevation="0">
         <header class="incident-panel-heading">
           <h2>장애 {{ history.incidentNumber }} 처리 이력</h2>
           <button class="incident-close" type="button" aria-label="이력 팝업 닫기" @click="history.open = false">
