@@ -36,7 +36,14 @@ router.beforeEach(async to => {
   }
 
   if (to.path === '/' && authStore.isAuthenticated) {
-    return authStore.role === APP_ROLES.ADMIN ? '/admin/dashboard' : '/dashboard'
+    if (authStore.role === APP_ROLES.ADMIN) {
+      return '/admin/dashboard'
+    }
+    if (authStore.role === APP_ROLES.TRAIN_MANAGER) {
+      return '/train-overview'
+    }
+
+    return '/dashboard'
   }
 })
 
