@@ -5,12 +5,11 @@ const BASE = '/api/incidents'
 // 검색·페이지·정렬 조건으로 운행 장애 목록을 조회한다.
 export const fn_listIncidents = filters => {
   // 비어 있는 조건은 제외해 서버가 전체 검색으로 처리하게 한다.
-  const body = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== '' && value !== null))
+  const params = new URLSearchParams(
+    Object.entries(filters).filter(([, value]) => value !== '' && value != null),
+  )
 
-  return fn_apiRequest(`${BASE}/search`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+  return fn_apiRequest(`${BASE}/search?${params}`, { cache: 'no-store' })
 }
 
 // 장애 ID로 접수 및 조치 내용을 조회한다.
