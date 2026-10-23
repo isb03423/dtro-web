@@ -32,3 +32,8 @@ export const fn_updateComplaint = (id, payload) => fn_apiRequest(`${BASE}/${enco
   method: 'PUT',
   body: JSON.stringify(payload),
 })
+
+export const fn_updateComplaintAnswer = (id, payload) => fn_apiRequest(`${BASE}/${encodeURIComponent(id)}/answer`, {
+  method: 'PATCH',
+  body: JSON.stringify(payload),
+})
